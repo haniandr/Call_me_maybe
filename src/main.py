@@ -26,7 +26,7 @@ output: {
     }
 """
 
-first_arg = '{\n"name": '
+first_arg = '{"name": '
 
 model = Small_LLM_Model()
 
@@ -38,8 +38,11 @@ real_logit = max(logits)
 
 first_valid_tokens = model.encode(first_arg)
 
-# for i in range():
+valid_pos = 0
 
+for i in range(len(logits)):
+    if i not in first_valid_tokens[valid_pos]:
+        logits[i] = float[-inf]
 
 
 

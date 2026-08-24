@@ -40,18 +40,14 @@ first_valid_tokens = model.encode(first_arg)
 
 valid_pos = 0
 
-for i in range(len(logits)):
-    if i not in first_valid_tokens[valid_pos]:
-        logits[i] = float[-inf]
-
-
-
-
-
-def turn_into_inf(logits: list[int]) -> None:
+def check_valid_token(logits, valid_pos, tokens_valid) -> list[float]:
     for i in range(len(logits)):
-        if logits[i] < real_logit:
-            logits[i] = float('-inf')
+        if i not in tokens_valid[valid_pos]:
+            logits[i] = float[-inf]
+    return logits
+
+
+
 
 if __name__ == "__main__":
     print()

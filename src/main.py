@@ -46,7 +46,9 @@ def check_valid_token(logits, valid_pos, tokens_valid) -> list[float]:
             logits[i] = float[-inf]
     return logits
 
-
+def get_valid_token(valid_logit, checker_token):
+    valid_token = model.decode(valid_logit)
+    
 
 
 if __name__ == "__main__":

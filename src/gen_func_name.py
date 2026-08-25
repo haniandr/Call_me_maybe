@@ -33,6 +33,8 @@ Result:
         self.result = []
 
     def get_first_arg(self, request) -> None | list[..., ...]:
+        # combine the prompt and the function name needed 
+        # inside with the user's query 
         prompt = self.prompt.format(func_name="".join(func_name), query=request)
         while True:
             input_ids = self._model.encode(self.prompt)

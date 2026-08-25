@@ -37,7 +37,7 @@ Result:
         # inside with the user's query 
         prompt = self.prompt.format(func_name="".join(func_name), query=request)
         while True:
-            input_ids = self._model.encode(self.prompt)
+            input_ids = self._model.encode(prompt)
             first_key_token = self._model.encode(self.first_arg)
             logits = self._model.get_logits_from_input_ids(
                 input_ids.tolist()[0]
@@ -50,7 +50,7 @@ Result:
             if valid_token == first_key_token[self._valid_pos]:
                 self._valid_pos += 1
                 self.result.append(valid_token)
-            self.prompt += valid_token
+            prompt += valid_token
             if self._valid_pos == len(first_key_token):
                 break
         return self.result

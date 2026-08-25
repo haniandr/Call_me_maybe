@@ -53,7 +53,7 @@ Result:
             if valid_token == first_key_token[self._valid_pos]:
                 self._valid_pos += 1
                 self.result.append(valid_token)
-            prompt += valid_token
+            self.prompt += valid_token
         if self._valid_pos == len(first_key_token):
             return self.result
         else:

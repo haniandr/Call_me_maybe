@@ -1,4 +1,5 @@
 from llm_sdk import Small_LLM_Model
+import sys
 
 func_name = [
     "fn_add_numbers",
@@ -15,17 +16,10 @@ class GenerationFuncName:
 You are a function-calling assistant. Your task is to translate the user's request into a 
 structural JSON format with the names, the user's request, the arguments with their values.
 
-The available functions:
-fn_add_numbers(a: float, b: float): add two numbers.
-fn_greet(name: str): greets a person by name.
-fn_reverse_string(s: str): reverse a string and return the new string reversed. 
-fn_get_square_root(a: int): calculate the root of the given number.
-fn_substitute_string(source_string: str, regex: str, replacement: str): Replace 
-all occurrences matching a regex pattern in a string
+The functions: {func_name}
 
-request: "What is the sum of 3 and 2?"
+request: "{query}"
 output: {
-        "prompt": "What is the sum of 3 and 2?",
         "name": "fn_add_numbers",
         "arguments": {"a": 3.0, "b": 2.0}"
 Result:
@@ -38,10 +32,9 @@ Result:
         self.result = []
 
     def get_first_arg(self) -> None | list[..., ...]:
-        input_ids = self._model.encode(self.prompt)
-        first_key_token = self._model.encode(self.first_arg)
-
-        for i in range(len(first_key_token)):
+        while True:
+            input_ids = self._model.encode(self.prompt)
+            first_key_token = self._model.encode(self.first_arg)
             logits = self._model.get_logits_from_input_ids(
                 input_ids.tolist()[0]
             )
@@ -54,10 +47,9 @@ Result:
                 self._valid_pos += 1
                 self.result.append(valid_token)
             self.prompt += valid_token
-        if self._valid_pos == len(first_key_token):
-            return self.result
-        else:
-            return None
+            if self._valid_pos == len(first_key_token):
+                break
+        return self.result
 
 
 gen = GenerationFuncName()

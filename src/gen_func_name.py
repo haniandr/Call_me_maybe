@@ -9,10 +9,9 @@ func_name = [
     "fn_substitute_string_with_regex"
 ]
 
-class GenerationFuncName:
-    first_arg = '{"name": '
+first_arg = '{"name": '
 
-    prompt = """
+template = """
 You are a function-calling assistant. Your task is to translate the user's request into a 
 structural JSON format with the names, the user's request, the arguments with their values.
 
@@ -26,6 +25,8 @@ Result:
 
 """
 
+
+class GenerationFuncName:
     def __init__(self) -> None:
         
         self._model = Small_LLM_Model()
@@ -35,10 +36,10 @@ Result:
     def get_first_arg(self, request) -> None | list[..., ...]:
         # combine the prompt and the function name needed 
         # inside with the user's query 
-        prompt = self.prompt.format(func_name="".join(func_name), query=request)
+        prompt = template.format(func_name="".join(func_name), query=request)
         while True:
             input_ids = self._model.encode(prompt)
-            first_key_token = self._model.encode(self.first_arg).tolist()[0]
+            first_key_token = self._model.encode(first_arg).tolist()[0]
             logits = self._model.get_logits_from_input_ids(
                 input_ids.tolist()[0]
             )

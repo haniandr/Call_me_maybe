@@ -38,7 +38,7 @@ Result:
         prompt = self.prompt.format(func_name="".join(func_name), query=request)
         while True:
             input_ids = self._model.encode(prompt)
-            first_key_token = self._model.encode(self.first_arg)
+            first_key_token = self._model.encode(self.first_arg).tolist()[0]
             logits = self._model.get_logits_from_input_ids(
                 input_ids.tolist()[0]
             )

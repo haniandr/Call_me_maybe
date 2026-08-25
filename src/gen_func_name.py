@@ -27,11 +27,13 @@ Result:
 """
 
     def __init__(self) -> None:
+        
         self._model = Small_LLM_Model()
         self._valid_pos = 0
         self.result = []
 
-    def get_first_arg(self) -> None | list[..., ...]:
+    def get_first_arg(self, request) -> None | list[..., ...]:
+        prompt = self.prompt.format(func_name="".join(func_name), query=request)
         while True:
             input_ids = self._model.encode(self.prompt)
             first_key_token = self._model.encode(self.first_arg)
@@ -39,7 +41,7 @@ Result:
                 input_ids.tolist()[0]
             )
             for i in range(len(logits)):
-                if i not in first_key_token[self._valid_pos]:
+                if i != first_key_token[self._valid_pos]:
                     logits[i] = float('-inf')
             argmax = max(logits)
             valid_token = self._model.decode(argmax)

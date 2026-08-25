@@ -45,7 +45,7 @@ Result:
             for i in range(len(logits)):
                 if i != first_key_token[self._valid_pos]:
                     logits[i] = float('-inf')
-            argmax = max(logits)
+            argmax = logits.index(max(logits))
             valid_token = self._model.decode(argmax)
             if valid_token == first_key_token[self._valid_pos]:
                 self._valid_pos += 1

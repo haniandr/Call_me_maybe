@@ -1,5 +1,5 @@
 from llm_sdk import Small_LLM_Model
-import sys
+
 
 func_name = [
     "fn_add_numbers",

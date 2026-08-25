@@ -57,4 +57,4 @@ Result:
 
 
 gen = GenerationFuncName()
-print(gen.get_first_arg())
+print(gen.get_first_arg("What is the sum of 3 and 2?" ))

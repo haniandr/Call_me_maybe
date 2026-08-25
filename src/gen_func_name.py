@@ -38,8 +38,8 @@ Result:
         self.result = []
 
     def get_first_arg(self) -> None | list[..., ...]:
-        input_ids = self._model.encode(prompt)
-        first_key_token = self._model.encode(first_arg)
+        input_ids = self._model.encode(self.prompt)
+        first_key_token = self._model.encode(self.first_arg)
 
         for i in range(len(first_key_token)):
             logits = self._model.get_logits_from_input_ids(

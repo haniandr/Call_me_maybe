@@ -24,7 +24,7 @@ Result:
 
 
 class GenerationFuncName:
-    def __init__(self) -> None:       
+    def __init__(self) -> None:
         self._model = Small_LLM_Model()
         self._valid_pos = 0
         self.result: list[str] = []
@@ -51,8 +51,8 @@ class GenerationFuncName:
                 if i != first_key_token[self._valid_pos]:
                     logits[i] = float('-inf')
             argmax = logits.index(max(logits))
-            valid_token = self._model.decode(argmax)
             if argmax == first_key_token[self._valid_pos]:
+                valid_token = self._model.decode(argmax)
                 self._valid_pos += 1
                 self.result.append(valid_token)
             self.prompt += valid_token
@@ -62,49 +62,63 @@ class GenerationFuncName:
         return self.result
 
     def get_name_value(self) -> None | list[str]:
-        index = 0
         func_tok_value = [
-            self._model.encode(candidate)
+            self._model.encode(f'"{candidate}",').tolist()[0]
             for candidate in func_name
         ]
+        candidates = func_tok_value
+        
+        pos = 0
+
         while True:
-            if self.result:
-                input_ids = self._model.encode(self.prompt)
-                logits = self._model.get_logits_from_input_ids(
-                    input_ids()[0]
-                )
+            input_ids = self._model.encode(self.prompt)
+            logits = self._model.get_logits_from_input_ids(
+                input_ids.tolist()[0]
+            )
 
-                # sort the logits by their value but return the index
-                sorted_logits = sorted(
-                        range(len(logits)),
-                        key=lambda x: logits[x],
-                        reverse=True,
-                )
+            # sort the logits by their value but return the index
+            sorted_logits = sorted(
+                    range(len(logits)),
+                    key=lambda x: logits[x],
+                    reverse=True,
+            )
 
-                pos = 0
-                for i in range(len(logits[:200])):
-                    expected_token = [
-                        item[pos] for item in func_tok_value
-                    ]
+            # token attendu pour chq tour dans les func_token
+            expected_token = [
+                tokens[pos]
+                for tokens in candidates
+                if pos < len(tokens)
+            ]
 
-                    if sorted_logits[index] in expected_token:
-                        tok_gotten = self._model.decode(sorted_logits[index])
-                        self.result.append(tok_gotten)
-                        self.prompt += tok_gotten
-                        pos += 1
-                        break
-                    index += 1
-                    for func in func_tok_value:
-                        if pos == len(func):
-                            return self.result
-            return None
+            chosen = None
 
-            # for i in range(len(sorted_logits[:100])):
-            #     max_token = self._model.decode(sorted_logits[i])
-            #     for name in func_tok_value:
-            #         if max_token in name:
-            #             name_supposed += name
-            #             index = len(max_token)
+            for token in sorted_logits:
+                if token in expected_token:
+                    chosen = token
+                    break
+
+            if chosen is None:
+                return None
+
+            gotten_name = self._model.decode(chosen)
+            self.result.append(gotten_name)
+            self.prompt += gotten_name
+
+            # sort the name_func to reduce the unuseful name
+            new_func_name = [
+                needed
+                for needed in candidates
+                if pos < len(needed) and needed[pos] == chosen
+            ]
+            candidates = new_func_name
+
+            if len(candidates) == 1 and pos == len(candidates[0]) - 1:
+                if candidates[0][pos] == chosen:
+                    break
+
+            pos += 1
+
+        return "".join(self.result)
 
 
 if __name__ == "__main__":

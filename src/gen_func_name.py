@@ -63,7 +63,7 @@ class GenerationFuncName:
 
     def get_name_value(self) -> None | list[str]:
         func_tok_value = [
-            self._model.encode(f'"{candidate}",').tolist()[0]
+            self._model.encode(f'"{candidate}"').tolist()[0]
             for candidate in func_name
         ]
         candidates = func_tok_value

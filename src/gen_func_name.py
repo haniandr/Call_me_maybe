@@ -9,7 +9,7 @@ func_name = [
     "fn_substitute_string_with_regex"
 ]
 
-first_arg = '{"name": '
+first_arg = '"name": '
 
 template = """
 You are a function-calling assistant. Your task is to translate the user's request into a 
@@ -122,6 +122,6 @@ class GenerationFuncName:
 
 
 if __name__ == "__main__":
-    gen = GenerationFuncName()
-    print(gen.get_name_key("What is the sum of 3 and 2?"))
-    print(gen.get_name_value())
+     gen = GenerationFuncName()
+     print(gen.get_name_key("Greet Shrek"))
+     print(gen.get_name_value())

@@ -10,6 +10,8 @@ class State(str, Enum):
     STRING = auto()
     SIGN = auto()
     NUMBER = auto()
+    COMMA = auto()
+    DECIMAL = auto()
     END = auto()
 
 

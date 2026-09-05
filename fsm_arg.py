@@ -58,3 +58,4 @@ class NUMBER(TYPE_ARG):
             if char == '"':
                 return State.END
         return None
+    

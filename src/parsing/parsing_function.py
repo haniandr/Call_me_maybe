@@ -4,6 +4,7 @@ from pydantic import (
     BaseModel,
     Field
 )
+from enum import Enum
 from typing import Any
 
 
@@ -11,16 +12,31 @@ class FunctionDefinitionError(Exception):
     ...
 
 
+class TypeSpecify(Enum):
+    Number = "number"
+    String = "string"
+    Boolean = "boolean"
+    Null = "None"
+
+
+class ParamsType(BaseModel):
+    type: TypeSpecify
+
+
+class ReturnType(BaseModel):
+    type: TypeSpecify
+
+
 class FunctionDefinition(BaseModel):
     name: str = Field()
     description: str = Field()
-    parameters: dict[str, dict[str, str]] = Field()
-    returns: dict[str, str] = Field()
+    parameters: dict[str, ParamsType] = Field()
+    returns: ReturnType = Field()
 
     @model_validator(mode="after")
     def validate_model(self) -> "FunctionDefinition":
-        for key in self.parameters.keys():
-            if 'type' not in self.parameters[key].keys():
+        for key in self.parameters:
+            if 'type' not in self.parameters[key]:
                 raise ValueError("Unexpected key in place of 'type'")
         return self
 
@@ -48,8 +64,8 @@ def parse_file(name: str) -> None | list[dict[str, Any]]:
     except json.JSONDecodeError:
         print(f"You have an invalid format JSON in the file '{name}'")
 
-    except FunctionDefinitionError as e:
-        print(e)
+    except FunctionDefinitionError:
+        ...
 
     except FileNotFoundError:
         print("No such file or directory"

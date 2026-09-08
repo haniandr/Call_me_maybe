@@ -69,6 +69,7 @@ class GenerationFuncName:
         candidates = func_tok_value
         
         pos = 0
+        result = []
 
         while True:
             input_ids = self._model.encode(self.prompt)
@@ -118,7 +119,7 @@ class GenerationFuncName:
 
             pos += 1
 
-        return "".join(self.result)
+        return "".join(result)
 
 
 if __name__ == "__main__":

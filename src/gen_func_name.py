@@ -19,6 +19,7 @@ The functions: {func_name}
 
 request: "{query}"
 Result:
+"name": 
 
 """
 
@@ -27,47 +28,50 @@ class GenerationFuncName:
     def __init__(self) -> None:
         self._model = Small_LLM_Model()
         self._valid_pos = 0
-        self.result: list[str] = []
 
-    def get_name_key(self, request) -> None | list[str]:
-        """
-        Get the name key.
-        """
-        # combine the prompt and the function name needed
-        # inside with the user's query
+    # def get_name_key(self, request) -> None | list[str]:
+    #     """
+    #     Get the name key.
+    #     """
+    #     # combine the prompt and the function name needed
+    #     # inside with the user's query
+    #     self.prompt = template.format(
+    #         func_name="".join(func_name),
+    #         query=request
+    #     )
+
+    #     first_key_token = self._model.encode(first_arg).tolist()[0]
+
+    #     while True:
+    #         input_ids = self._model.encode(self.prompt)
+    #         logits = self._model.get_logits_from_input_ids(
+    #             input_ids.tolist()[0]
+    #         )
+    #         for i in range(len(logits)):
+    #             if i != first_key_token[self._valid_pos]:
+    #                 logits[i] = float('-inf')
+    #         argmax = logits.index(max(logits))
+    #         if argmax == first_key_token[self._valid_pos]:
+    #             valid_token = self._model.decode(argmax)
+    #             self._valid_pos += 1
+    #             self.result.append(valid_token)
+    #         self.prompt += valid_token
+    #         if self._valid_pos == len(first_key_token):
+    #             break
+    #     # self.result = "".join(self.result)
+    #     return self.result
+
+    def get_name_value(self, request) -> None | list[str]:
         self.prompt = template.format(
             func_name="".join(func_name),
             query=request
         )
-
-        first_key_token = self._model.encode(first_arg).tolist()[0]
-
-        while True:
-            input_ids = self._model.encode(self.prompt)
-            logits = self._model.get_logits_from_input_ids(
-                input_ids.tolist()[0]
-            )
-            for i in range(len(logits)):
-                if i != first_key_token[self._valid_pos]:
-                    logits[i] = float('-inf')
-            argmax = logits.index(max(logits))
-            if argmax == first_key_token[self._valid_pos]:
-                valid_token = self._model.decode(argmax)
-                self._valid_pos += 1
-                self.result.append(valid_token)
-            self.prompt += valid_token
-            if self._valid_pos == len(first_key_token):
-                break
-        # self.result = "".join(self.result)
-        return self.result
-
-    def get_name_value(self) -> None | list[str]:
         func_tok_value = [
-            self._model.encode(f'"{candidate}"').tolist()[0]
+            self._model.encode(f'{candidate}').tolist()[0]
             for candidate in func_name
         ]
         candidates = func_tok_value
-        
+
         pos = 0
         result = []
 
@@ -102,7 +106,7 @@ class GenerationFuncName:
                 return None
 
             gotten_name = self._model.decode(chosen)
-            self.result.append(gotten_name)
+            result.append(gotten_name)
             self.prompt += gotten_name
 
             # sort the name_func to reduce the unuseful name
@@ -124,5 +128,4 @@ class GenerationFuncName:
 
 if __name__ == "__main__":
      gen = GenerationFuncName()
-     print(gen.get_name_key("Greet Shrek"))
-     print(gen.get_name_value())
+     print(gen.get_name_value("Greet Shrek"))

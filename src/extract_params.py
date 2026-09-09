@@ -2,8 +2,8 @@ from enum import Enum, auto
 from abc import ABC, abstractmethod
 from typing import Any
 from llm_sdk import Small_LLM_Model
-from src.parsing.parsing_function import Parsing
-from src.gen_func_name import GenerationFuncName
+from parsing.parsing_function import Parsing
+from gen_func_name import GenerationFuncName
 
 
 class State(str, Enum):
@@ -17,15 +17,16 @@ class State(str, Enum):
 
 
 prompt = """
-Extract the right parameters for each functions 
-following the type matched for the functions/
+Extract the parameters from the user's query for each functions
+
 Choose well which type and value should fill the parameter's value.
 
 The functions with their appropriate arguments:
 {func_param_list}
 
-parameters:
-"{param_key}":  
+
+parameters: {type}
+"{param_key}": 
 """
 
 class TYPEARG(ABC):
@@ -78,7 +79,7 @@ class NUMBER(TYPEARG):
         return None
 
 
-class BOOLEAN(TYPEARG):
+class BOOLEAN(STRING):
     ...
 
 
@@ -86,18 +87,17 @@ class ConstraintParams:
     def __init__(self) -> None:
         self.prompt = ""
         self._model = Small_LLM_Model()
-        self._arg = TYPEARG()
         self._func = GenerationFuncName()
 
     def get_param_func(self) -> list[dict[str, Any]]:
-        func_list = Parsing().parse_file("data/input/functions_calling_definition.json")
+        func_list = Parsing.parse_file("data/input/functions_definition.json")
         needed_list = []
         for func in func_list:
             needed_list.append({
-                "name": func.name,
+                "name": func["name"],
                 "parameters": {
                     key: value
-                    for key, value in func.parameters.items()
+                    for key, value in func["parameters"].items()
                 }
             })
         return needed_list
@@ -142,7 +142,11 @@ class ConstraintParams:
         return result
 
 
-    def combine_param(self, name_func: str) -> dict[str, Any]:
+    def combine_param(
+            self,
+            name_func: str,
+            request: str
+    ) -> dict[str, Any]:
         """
         Combine all of the process to get the param's value
         following the appropriate type according
@@ -159,36 +163,24 @@ class ConstraintParams:
 
         param_result = {}
         for func_name, param in all_params.items():
-            if func_name != name_func:
-                continue
-            for param_key, param_type in param.items():
-                self.prompt = prompt.format(
-                    func_param_list=all_params,
-                    param_key=param_key
-                )
-                self.choose_type_state(param_type.lower())
-                param = self.generate_param()
-                if param:
-                    param_result[param_key] = "".join(param)
+            if func_name == name_func:
+                for param_key, param_type in param.items():
+                    self.choose_type_state(param_type)
+                    self.prompt = prompt.format(
+                        func_param_list=all_params,
+                        query=request,
+                        param_key=param_key,
+                        type = self._arg
+                    )
+                    res = self.generate_param()
+                    if res:
+                        param_result[param_key] = "".join(res.strip('"'))
         return param_result
 
-            #state = State.START
-                #while state != State.END:
-                #input_ids = self._model.encode(self.prompt)
-                #logits = self._model.get_logits_from_input_ids(
-                #   input_ids.tolist()[0]
-                #)
-                #sorted_logits = sorted(
-                #   range(len(logits)),
-                #    key=lambda x: logits[x#],
-                #   reverse=True,
-                #)
-                #for token in sorted_logits:
-                #   word = self._model.decode(token)
-                #    self.choose_type_state(all_params[param])
-            #   current_state = self._arg.func_verify(state, word)
-                #   if current_state is None:
-                #       continue
-                #   self.prompt += token + ","
-                #   state = current_state
 
+if __name__ == "__main__":
+    param = ConstraintParams()
+    request = "What is the sum of 4 and 3?"
+    func = GenerationFuncName()
+    name = func.get_name_value(request)
+    print(param.combine_param(name, request))

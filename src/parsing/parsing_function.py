@@ -77,3 +77,5 @@ class Parsing:
         except PermissionError:
             print(f"No permission to open this file {name}.")
 
+if __name__ == "__main__":
+    print(Parsing.parse_file("data/input/functions_definition.json"))

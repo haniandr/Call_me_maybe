@@ -43,7 +43,15 @@ class TYPEARG(ABC):
 
 
 class STRING(TYPEARG):
-    def take_state(self, state: State, char: Any) -> State | None:
+    def __init__(self) -> None:
+        self.result = ""
+        self.state = State.START
+
+    def take_next_state(
+        self,
+        state: State,
+        char: Any
+    ) -> State | None:
         if state == State.START:
             if char == '"':
                 return State.STRING
@@ -64,6 +72,33 @@ class STRING(TYPEARG):
         if state == State.END:
             return None
         return None
+
+    def verify_state(self, content: str) -> bool:
+        """
+        Verify the state if it's valid for every
+        character in the gotten string.
+        """
+        for char in content:
+            state = self.take_next_state(self.state, char)
+            if state is None:
+                return False
+        return True
+        
+    def validate_string(self, content: str) -> None:
+        for char in content:
+            if self.state == State.START:
+                self.state = State.STRING
+            elif self.state == State.STRING:
+                if char == '"':
+                    self.state = State.END
+                elif char == "\\":
+                    self.state = State.ESCAPE
+                else:
+                    self.value += char
+            elif self.state == State.ESCAPE:
+                self.value += char
+                self.state = State.STRING
+                
 
 
 class NUMBER(TYPEARG):

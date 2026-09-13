@@ -45,11 +45,24 @@ class TYPEARG(ABC):
 class STRING(TYPEARG):
     def take_state(self, state: State, char: Any) -> State | None:
         if state == State.START:
-            return State.STRING
+            if char == '"':
+                return State.STRING
+            return None
+
         if state == State.STRING:
             if char == '"':
                 return State.END
+            elif char == "\\":
+                return ESCAPE
             return State.STRING
+
+        if state == State.ESCAPE:
+            if char in '"\\/vntrfb':
+                return State.STRING
+            return None
+
+        if state == State.END:
+            return None
         return None
 
 

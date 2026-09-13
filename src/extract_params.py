@@ -29,20 +29,7 @@ parameters: {type}
 "{param_key}": 
 """
 
-class TYPEARG(ABC):
-    @abstractmethod
-    def take_state(self, state: State, char: Any) -> None | State:
-        ...
-
-    def func_verify(self, state: State, content: str) -> None | State:
-        for char in content:
-            state = self.take_state(state, char)
-            if state is None:
-                return None
-        return state
-
-
-class STRING(TYPEARG):
+class STRING:
     def __init__(self) -> None:
         self.result = ""
         self.state = State.START
@@ -84,7 +71,7 @@ class STRING(TYPEARG):
                 return False
         return True
         
-    def validate_string(self, content: str) -> None:
+    def check_and_load(self, content: str) -> None:
         for char in content:
             if self.state == State.START:
                 self.state = State.STRING
@@ -106,13 +93,20 @@ class STRING(TYPEARG):
                 
 
 
-class NUMBER(TYPEARG):
+class NUMBER:
+    def __init__(self) -> None:
+        self.value = ""
+        self.state = State.START
+        self.delimiters = {'"', '\"', "\n"}
+
     def take_state(self, state: State, char: Any) -> None | State:
         if state == State.START:
             if char in "-+":
                 return State.SIGN
             if char.isdigit():
                 return State.NUMBER
+            return None
+
         if state == State.SIGN and char.isdigit():
                 return State.NUMBER
         if state == State.NUMBER:
@@ -130,6 +124,34 @@ class NUMBER(TYPEARG):
             else:
                 return State.END
         return None
+
+    def verify_state(self, content: str) -> bool:
+        """
+        Verify the state if it's valid for every
+        character in the gotten string.
+        """
+        state = self.state
+        for char in content:
+            state = self.take_next_state(self.state, char)
+            if state is None:
+                return False
+        return True
+        
+    def check_and_load(self, content: str) -> bool:
+        for char in content:
+            next_state = self.take_next_state(self.state, char)
+            if next_state is None:
+                return False
+    
+            if next_state is in (
+                State.SIGN,
+                State.NUMBER,
+                State.COMMA,
+                State.DECIMAL):
+                self.value += char
+            self.state = next_state
+        return True
+            
 
 
 class BOOLEAN(STRING):

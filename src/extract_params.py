@@ -98,6 +98,11 @@ class STRING(TYPEARG):
             elif self.state == State.ESCAPE:
                 self.value += char
                 self.state = State.STRING
+
+    def is_stopped(self) -> bool:
+        if self.state == State.STRING or self.state == State.END:
+            return True
+        return False
                 
 
 

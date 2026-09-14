@@ -274,7 +274,7 @@ class FsmInteger:
 class GenerationParams:
     def __init__(
         self,
-        prompt: str,
+        prompt: str = "",
         model: Small_LLM_Model
     ) -> None:
         self._model = model
@@ -423,11 +423,14 @@ class GenerationParams:
 
 
 class ConstraintParams:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        model: Small_LLM_Model
+    ) -> None:
         self.prompt = ""
         self._model = model
         self._func = GenerationFuncName()
-        self._param = GenerationParams(self.prompt)
+        self._param = GenerationParams(model)
 
     def get_param_func(self) -> list[dict[str, Any]]:
         """

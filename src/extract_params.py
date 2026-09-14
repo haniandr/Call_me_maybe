@@ -383,6 +383,7 @@ class GenerationParams:
                 range(len(logits)),
                 key=lambda x: logits[x],
                 reverse=True
+            )
 
             for token in sorted_logits:
                 if token in waited_token:

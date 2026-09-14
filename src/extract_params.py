@@ -15,6 +15,7 @@ class State(str, Enum):
     NUMBER = auto()
     COMMA = auto()
     ESCAPE = auto()
+    INTEGER = auto()
     DECIMAL = auto()
     END = auto()
 
@@ -65,9 +66,10 @@ class FsmString:
 
     def verify_content(self, content: str) -> bool:
         """
-        Verify the state if it's valid for every
-        character in the gotten string.
+        Verify if the content is accepted by the fsm 
+        without modifying the actual state.
         """
+        state = self.state
         for char in content:
             state = self.take_next_state(state, char)
             if state is None:
@@ -76,8 +78,12 @@ class FsmString:
         
     def check_and_load(self, content: str) -> bool:
         for char in content:
+            next_state = self.take_next_state(
+                self.state, char
+            )
             if self.state == State.START:
                 self.state = State.STRING
+
             if self.state == State.STRING:
                 if char == '"':
                     self.state = State.END
@@ -85,9 +91,12 @@ class FsmString:
                     self.state = State.ESCAPE
                 else:
                     self.value += char
-            elif self.state == State.ESCAPE:
+                    self.state = next_state
+                continue
+            if self.state == State.ESCAPE:
                 self.value += char
                 self.state = State.STRING
+                continue
             else:
                 return False
         return True
@@ -109,30 +118,44 @@ class FsmNumber:
         if state == State.START:
             if char in "-+":
                 return State.SIGN
+
             if char.isdigit():
                 return State.NUMBER
+
             return None
 
-        if state == State.SIGN and char.isdigit():
+        if state == State.SIGN:
+            if char.isdigit():
                 return State.NUMBER
+
+            return None
 
         if state == State.NUMBER:
             if char == ".":
                 return State.COMMA
+
             elif char.isdigit():
                 return State.NUMBER
+
             elif char in self.delimiters:
                 return State.END
+
             return None
 
-        if state == State.COMMA and char.isdigit():
+        if state == State.COMMA:
+            if char.isdigit():
                 return State.DECIMAL
+
+            return None
 
         if state == State.DECIMAL:
             if char.isdigit():
                 return State.DECIMAL
+
             if char in self.delimiters:
                 return State.END
+
+            return None
 
         return None
 
@@ -141,9 +164,10 @@ class FsmNumber:
         Verify the state if it's valid for every
         character in the gotten string.
         """
+        state = self.state
         for char in content:
-            next_state = self.take_next_state(state, char)
-            if next_state is None:
+            state = self.take_next_state(state, char)
+            if state is None:
                 return False
         return True
 
@@ -186,22 +210,28 @@ class FsmInteger:
         if state == State.START:
             if char in "-+":
                 return State.SIGN
+                
             if char.isdigit():
                 return State.INTEGER
+                
             if char.isspace():
                 return State.START
+                
             return None
 
         elif state == State.SIGN:
             if char.isdigit():
                 return State.INTEGER
+                
             return None
 
         if state == State.INTEGER:
             if char.isdigit():
                 return State.INTEGER
+                
             if char in self.delimiters:
                 return State.END
+                
             return None
 
         return None
@@ -211,9 +241,10 @@ class FsmInteger:
         Check every character in the gotten string
         if it follows the fsm state
         """
+        state = self.state
         for char in content:
-            next_state = self.take_next_state(state, char)
-            if next_state is None:
+            state = self.take_next_state(state, char)
+            if state is None:
                 return False
         return True
 
@@ -241,24 +272,32 @@ class FsmInteger:
 
 
 class GenerationParams:
-    def __init__(self, prompt: str) -> None:
+    def __init__(
+        self,
+        prompt: str,
+        model: Small_LLM_Model
+    ) -> None:
         self._model = model
         self.prompt = prompt
         self.delimiters = {'"', "\n", ","}
 
-    def gen_string_value(self) -> None | str:
-        while True:
-            input_ids = self._model.encode(self.prompt).tolist()[0]
-            logits = self._model.get_logits_from_input_ids(input_ids)
+    def _get_sorted_logits(self) -> list[int]:
+        input_ids = self._model.encode(self.prompt)
 
-            string = FsmString()
+        logits = self._model.get_logits_from_input_ids(
+            input_ids.tolist()[0]
+        )
 
-            sorted_logits = sorted(
+        return sorted(
                 range(len(logits)),
                 key=lambda x: logits[x],
                 reverse=True
             )
 
+    def gen_string_value(self) -> None | str:
+        string = FsmString()
+        while not string.is_stopped():
+            sorted_logits = self._get_sorted_logits()
             token_id = None
 
             for token in sorted_logits:
@@ -271,29 +310,19 @@ class GenerationParams:
                 break
 
             word = self._model.decode(token_id)
-            if string.check_and_load(word):
-                self.prompt += word
 
-            if string.is_stopped():
-                break
+            if not string.check_and_load(word):
+                return None
 
-        if not string.is_stopped():
-            return None
+            self.prompt += word
 
         return string.value
 
     def gen_integer_value(self) -> None | str:
-        while True:
-            input_ids = self._model.encode(self.prompt).tolist()[0]
-            logits = self._model.get_logits_from_input_ids(input_ids)
+        integer = FsmInteger()
 
-            integer = FsmInteger()
-
-            sorted_logits = sorted(
-                range(len(logits)),
-                key=lambda x: logits[x],
-                reverse=True
-            )
+        while not integer.is_stopped():
+            sorted_logits = self._get_sorted_logits()
 
             token_id = None
 
@@ -307,11 +336,11 @@ class GenerationParams:
                 break
 
             word = self._model.decode(token_id)
-            if integer.check_and_load(word):
-                self.prompt += word
 
-            if integer.is_stopped():
-                break
+            if not integer.check_and_load(word):
+                return None
+
+            self.prompt += word
 
         if not integer.is_stopped():
             return None
@@ -319,19 +348,10 @@ class GenerationParams:
         return integer.value
 
     def gen_number_value(self) -> None | str:
-        while True:
-            input_ids = self._model.encode(self.prompt)
-            logits = self._model.get_logits_from_input_ids(
-                input_ids.tolist()[0]
-            )
-
-            number = FsmNumber()
-
-            sorted_logits = sorted(
-                range(len(logits)),
-                key=lambda x: logits[x],
-                reverse=True
-            )
+        number = FsmNumber()
+        
+        while not number.is_stopped():
+            sorted_logits = self._get_sorted_logits()
 
             token_id = None
 
@@ -345,11 +365,10 @@ class GenerationParams:
                 break
 
             word = self._model.decode(token_id)
-            if number.check_and_load(word):
-                self.prompt += word
-
-            if number.is_stopped():
-                break
+            if not number.check_and_load(word):
+                return None
+    
+            self.prompt += word
 
         if not number.is_stopped():
             return None
@@ -361,6 +380,14 @@ class GenerationParams:
 
         value = ""
 
+        sorted_logits = self._get_sorted_logits()
+
+        waited_token = []
+
+        for item in waited_value:
+            ids = self._model.encode(item).tolist()[0]
+            waited_token.extend(ids)
+
         while True:
             input_ids = self._model.encode(self.prompt).tolist()[0]
             logits = self._model.get_logits_from_input_ids(input_ids)
@@ -371,20 +398,14 @@ class GenerationParams:
                 range(len(logits)),
                 key=lambda x: logits[x],
                 reverse=True
-            )
-
-            chosen = None
 
             for token in sorted_logits:
                 if token in waited_token:
-                    chosen = token
-                    break
-            if chosen is not None:
-                word = self._model.decode(chosen)
-                value += word
-                break
+                    word = self._model.decode(chosen)
+                    value += word
+                    return value
 
-        return value
+        return None
 
 
     def choose_function(self, param_type: str) -> None | str:

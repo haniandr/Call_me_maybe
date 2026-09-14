@@ -533,6 +533,7 @@ parameters: {types}
 
 
 if __name__ == "__main__":
+    model = Small_LLM_Model()
     param = ConstraintParams()
     request = "What is the sum of 4 and 3?"
     func = GenerationFuncName()

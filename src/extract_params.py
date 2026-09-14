@@ -6,8 +6,6 @@ from parsing.parsing_function import Parsing
 from gen_func_name import GenerationFuncName
 
 
-model = Small_LLM_Model()
-
 class State(str, Enum):
     START = auto()
     STRING = auto()
@@ -19,19 +17,6 @@ class State(str, Enum):
     DECIMAL = auto()
     END = auto()
 
-
-prompt = """
-Extract the parameters from the user's query for each functions
-
-Choose well which type and value should fill the parameter's value.
-
-The functions with their appropriate arguments:
-{func_param_list}
-
-
-parameters: {type}
-"{param_key}": 
-"""
 
 class FsmString:
     def __init__(self) -> None:
@@ -274,7 +259,7 @@ class FsmInteger:
 class GenerationParams:
     def __init__(
         self,
-        prompt: str = "",
+        prompt: str,
         model: Small_LLM_Model
     ) -> None:
         self._model = model

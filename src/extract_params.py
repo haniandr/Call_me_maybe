@@ -14,6 +14,7 @@ class State(str, Enum):
     SIGN = auto()
     NUMBER = auto()
     COMMA = auto()
+    ESCAPE = auto()
     DECIMAL = auto()
     END = auto()
 
@@ -33,7 +34,7 @@ parameters: {type}
 
 class FsmString:
     def __init__(self) -> None:
-        self.result = ""
+        self.value = ""
         self.state = State.START
 
     def take_next_state(
@@ -68,7 +69,7 @@ class FsmString:
         character in the gotten string.
         """
         for char in content:
-            state = self.take_next_state(self.state, char)
+            state = self.take_next_state(state, char)
             if state is None:
                 return False
         return True
@@ -140,10 +141,9 @@ class FsmNumber:
         Verify the state if it's valid for every
         character in the gotten string.
         """
-        state = self.state
         for char in content:
-            state = self.take_next_state(self.state, char)
-            if state is None:
+            next_state = self.take_next_state(state, char)
+            if next_state is None:
                 return False
         return True
 
@@ -167,6 +167,13 @@ class FsmNumber:
 
             self.state = next_state
         return True
+
+    def is_stopped(self) -> bool:
+        return self.state in (
+            State.NUMBER,
+            State.DECIMAL,
+            State.END
+        )
 
 
 class FsmInteger:
@@ -204,7 +211,6 @@ class FsmInteger:
         Check every character in the gotten string
         if it follows the fsm state
         """
-        state = self.state
         for char in content:
             next_state = self.take_next_state(state, char)
             if next_state is None:

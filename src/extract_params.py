@@ -415,7 +415,7 @@ class ConstraintParams:
     ) -> None:
         self.prompt: str = ""
         self.model = model
-        self.param = None
+        self._param = None
         self._func = GenerationFuncName()
 
     def get_param_func(self) -> list[dict[str, Any]]:

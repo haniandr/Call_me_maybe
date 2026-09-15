@@ -99,7 +99,7 @@ class FsmNumber:
         self.state = State.START
         self.delimiters = {'"', "\"", "\n"}
 
-    def take_state(self, state: State, char: Any) -> None | State:
+    def take_next_state(self, state: State, char: Any) -> None | State:
         if state == State.START:
             if char in "-+":
                 return State.SIGN
@@ -263,7 +263,7 @@ class GenerationParams:
         model: Small_LLM_Model
     ) -> None:
         self._model = model
-        self.prompt = prompt
+        self.prompt: str = prompt
         self.delimiters = {'"', "\n", ","}
 
     def _get_sorted_logits(self) -> list[int]:
@@ -387,7 +387,7 @@ class GenerationParams:
 
             for token in sorted_logits:
                 if token in waited_token:
-                    word = self._model.decode(chosen)
+                    word = self._model.decode(token)
                     value += word
                     return value
 
@@ -413,10 +413,10 @@ class ConstraintParams:
         self,
         model: Small_LLM_Model
     ) -> None:
-        self.prompt = ""
-        self._model = model
+        self.prompt: str = ""
+        self.model = model
+        self.param = None
         self._func = GenerationFuncName()
-        self._param = GenerationParams(model)
 
     def get_param_func(self) -> list[dict[str, Any]]:
         """
@@ -434,46 +434,18 @@ class ConstraintParams:
                 }
             })
         return needed_list
-#
-#     def choose_type_state(self, name: str) -> None:
-#         if name == "string":
-#             self._arg = STRING()
-#             self.prompt += '"'
-#         elif name == "number":
-#             self._arg = NUMBER()
-#         elif name == "boolean":
-#             self._arg = BOOLEAN()
-#         elif name == "integer" or name == "float":
-#             self._arg = NUMBER()
-#
-    # def generate_param(self) -> str:
-    #     """
-    #     Generate only the parameters by the LLM model.
-    #     """
-    #     result = ""
-    #     state = State.START
-    #     while state != State.END:
-    #         input_ids = self._model.encode(self.prompt)
-    #         logits = self._model.get_logits_from_input_ids(
-    #             input_ids.tolist()[0]
-    #         )
-    #         sorted_logits = sorted(
-    #             range(len(logits)),
-    #             key=lambda x: logits[x],
-    #             reverse=True
-    #         )
-    #
-    #         for token in sorted_logits:
-    #             word = self._model.decode(token)
-    #             current_state = self._arg.func_verify(state, word)
-    #             if current_state is None:
-    #                 continue
-    #             self.prompt += word
-    #             state = current_state
-    #             result += word
-    #             break
-    #     return result
-    #
+
+    def transform_to_real_type(self, param_type: str, word: str) -> Any:
+        if param_type in ("number", "float"):
+            return float(word)
+
+        elif param_type == "integer":
+            return int(word)
+
+        elif param_type == "boolean":
+            return bool(word)
+
+        return word
 
     def combine_param(
             self,
@@ -498,7 +470,6 @@ class ConstraintParams:
         for func_name, param in all_params.items():
             if func_name == name_func:
                 for param_key, param_type in param.items():
-                    # self.choose_type_state(param_type)
                     self.prompt = self.create_prompt(
                         query=request,
                         func_param_list=all_params,
@@ -506,9 +477,14 @@ class ConstraintParams:
                         types = param_type
                     )
 
+                    self._param = GenerationParams(self.prompt, self.model)
+
                     res = self._param.choose_function(param_type)
                     if res:
-                        param_result[param_key] = "".join(res.strip('"'))
+                        res_typed = self.transform_to_real_type(
+                            param_type, res
+                        )
+                        param_result[param_key] = res_typed
         return param_result
 
     def create_prompt(
@@ -524,18 +500,18 @@ Give the appropriate parameters for each functions from the user's query.
 
 Choose well which type and value should fill the parameter's value.
 
-The functions with their appropriate arguments:
+Functions:
 {func_param_list}
 
 parameters: {types}
-"{param_key}": "
-"""
+{param_key}: " """
 
 
 if __name__ == "__main__":
     model = Small_LLM_Model()
-    param = ConstraintParams()
+    param = ConstraintParams(model)
     request = "What is the sum of 4 and 3?"
     func = GenerationFuncName()
     name = func.get_name_value(request)
+    print(name)
     print(param.combine_param(name, request))

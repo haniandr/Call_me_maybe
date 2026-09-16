@@ -1,9 +1,10 @@
-from enum import Enum, auto
 from abc import ABC, abstractmethod
+from enum import Enum, auto
 from typing import Any
+
+from gen_func_name import GenerationFuncName
 from llm_sdk import Small_LLM_Model
 from parsing.parsing_function import Parsing
-from gen_func_name import GenerationFuncName
 
 
 class State(str, Enum):
@@ -29,9 +30,7 @@ class FsmString:
         char: Any
     ) -> State | None:
         if state == State.START:
-            if char == '"':
-                return State.STRING
-            return None
+            return State.STRING
 
         if state == State.STRING:
             if char == '"':
@@ -179,7 +178,6 @@ class FsmNumber:
 
     def is_stopped(self) -> bool:
         return self.state in (
-            State.NUMBER,
             State.DECIMAL,
             State.END
         )
@@ -253,7 +251,7 @@ class FsmInteger:
         return True
 
     def is_stopped(self) -> bool:
-        return self.state in (State.INTEGER, State.END)
+        return self.state == State.END
 
 
 class GenerationParams:
@@ -290,6 +288,8 @@ class GenerationParams:
                 if string.verify_content(chosen):
                     token_id = token
                     break
+
+            # print(token_id)
 
             if token_id is None:
                 break
@@ -404,8 +404,7 @@ class GenerationParams:
         elif param_type == "boolean":
             return self.gen_boolean_value()
 
-        else:
-            return self.gen_string_value()
+        return self.gen_string_value()
 
 
 class ConstraintParams:
@@ -468,11 +467,11 @@ class ConstraintParams:
 
         param_result = {}
         for func_name, param in all_params.items():
-            if func_name == name_func:
+            if func_name == name_func["name"]:
                 for param_key, param_type in param.items():
                     self.prompt = self.create_prompt(
                         query=request,
-                        func_param_list=all_params,
+                        func_param=name_func["name"],
                         param_key=param_key,
                         types = param_type
                     )
@@ -490,28 +489,27 @@ class ConstraintParams:
     def create_prompt(
         self,
         query: str,
-        func_param_list: dict[str, str],
+        func_param: dict[str, str],
         param_key: str,
         types: str
     ) -> str:
-        return f"""
-query: {query}
-Give the appropriate parameters for each functions from the user's query.
+        return f"""Only change the value when necessary.
 
-Choose well which type and value should fill the parameter's value.
+query: {query}
 
 Functions:
-{func_param_list}
+{func_param}
 
-parameters: {types}
-{param_key}: " """
+parameters:
+{param_key}: \""""
 
 
 if __name__ == "__main__":
     model = Small_LLM_Model()
     param = ConstraintParams(model)
-    request = "What is the sum of 4 and 3?"
+    request = "Calculate the square root of 1000"
     func = GenerationFuncName()
     name = func.get_name_value(request)
-    print(name)
+    # print(name)
     print(param.combine_param(name, request))
+

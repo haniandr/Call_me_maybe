@@ -1,11 +1,26 @@
 import argparse
 from parsing_function import Parsing
+from src.model import FunctionDefinition, FunctionCallingTest
 from pathlib import Path
 
 
 class Parser:
     def __init__(self) -> None:
         self._loader = Parsing()
+
+    def parse_file(name: str, model: BaseModel) -> None | list[dict[str, Any]]:
+        try:
+            with open(name, "r") as file:
+                data = json.load(file)
+            if len(data) == 0:
+                raise ValidationError(
+                    f"Your file '{name}'"
+                    "has no content. Please check!!"
+                )
+
+            function_list: list[model] = []
+            return function_list
+
 
     def parsing_file(self) -> None:
         parser = argparse.ArgumentParser()
@@ -36,3 +51,7 @@ class Parser:
 
         func_def = self._loader.parse_file(args.functions_definition)
         input_test = self._loader.parse_file(args.input)
+
+        try:
+
+

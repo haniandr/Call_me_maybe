@@ -5,30 +5,10 @@ from pydantic import (
     Field,
     ValidationError
 )
-from enum import Enum
+from src.model import (
+    FunctionDefinition
+)
 from typing import Any
-
-
-class TypeSpecify(Enum):
-    Number = "number"
-    String = "string"
-    Boolean = "boolean"
-    Null = "None"
-
-
-class ParamsType(BaseModel):
-    type: TypeSpecify
-
-
-class ReturnType(BaseModel):
-    type: TypeSpecify
-
-
-class FunctionDefinition(BaseModel):
-    name: str = Field()
-    description: str = Field()
-    parameters: dict[str, ParamsType] = Field()
-    returns: ReturnType = Field()
 
 class Parsing:
     def parse_file(name: str) -> None | list[dict[str, Any]]:

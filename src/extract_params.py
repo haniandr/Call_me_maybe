@@ -1,257 +1,11 @@
-from abc import ABC, abstractmethod
-from enum import Enum, auto
 from typing import Any
-
+from statemachine import (
+        FsmString,
+        FsmInteger,
+        FsmNumber
+)
 from gen_func_name import GenerationFuncName
 from llm_sdk import Small_LLM_Model
-from parsing.parsing_function import Parsing
-
-
-class State(str, Enum):
-    START = auto()
-    STRING = auto()
-    SIGN = auto()
-    NUMBER = auto()
-    COMMA = auto()
-    ESCAPE = auto()
-    INTEGER = auto()
-    DECIMAL = auto()
-    END = auto()
-
-
-class FsmString:
-    def __init__(self) -> None:
-        self.value = ""
-        self.state = State.START
-
-    def take_next_state(
-        self,
-        state: State,
-        char: Any
-    ) -> State | None:
-        if state == State.START:
-            return State.STRING
-
-        if state == State.STRING:
-            if char == '"':
-                return State.END
-            elif char == "\\":
-                return State.ESCAPE
-            return State.STRING
-
-        if state == State.ESCAPE:
-            if char in '"\\/vntrfb':
-                return State.STRING
-            return None
-
-        if state == State.END:
-            return None
-        return None
-
-    def verify_content(self, content: str) -> bool:
-        """
-        Verify if the content is accepted by the fsm 
-        without modifying the actual state.
-        """
-        state = self.state
-        for char in content:
-            state = self.take_next_state(state, char)
-            if state is None:
-                return False
-        return True
-        
-    def check_and_load(self, content: str) -> bool:
-        for char in content:
-            next_state = self.take_next_state(
-                self.state, char
-            )
-            if self.state == State.START:
-                self.state = State.STRING
-
-            if self.state == State.STRING:
-                if char == '"':
-                    self.state = State.END
-                elif char == "\\":
-                    self.state = State.ESCAPE
-                else:
-                    self.value += char
-                    self.state = next_state
-                continue
-            if self.state == State.ESCAPE:
-                self.value += char
-                self.state = State.STRING
-                continue
-            else:
-                return False
-        return True
-
-    def is_stopped(self) -> bool:
-        """
-        Verify if the state is in the case finished or not.
-        """
-        return self.state == State.END
-
-
-class FsmNumber:
-    def __init__(self) -> None:
-        self.value = ""
-        self.state = State.START
-        self.delimiters = {'"', "\"", "\n"}
-
-    def take_next_state(self, state: State, char: Any) -> None | State:
-        if state == State.START:
-            if char in "-+":
-                return State.SIGN
-
-            if char.isdigit():
-                return State.NUMBER
-
-            return None
-
-        if state == State.SIGN:
-            if char.isdigit():
-                return State.NUMBER
-
-            return None
-
-        if state == State.NUMBER:
-            if char == ".":
-                return State.COMMA
-
-            elif char.isdigit():
-                return State.NUMBER
-
-            elif char in self.delimiters:
-                return State.END
-
-            return None
-
-        if state == State.COMMA:
-            if char.isdigit():
-                return State.DECIMAL
-
-            return None
-
-        if state == State.DECIMAL:
-            if char.isdigit():
-                return State.DECIMAL
-
-            if char in self.delimiters:
-                return State.END
-
-            return None
-
-        return None
-
-    def verify_content(self, content: str) -> bool:
-        """
-        Verify the state if it's valid for every
-        character in the gotten string.
-        """
-        state = self.state
-        for char in content:
-            state = self.take_next_state(state, char)
-            if state is None:
-                return False
-        return True
-
-    def check_and_load(self, content: str) -> bool:
-        """
-        Check the content gotten if 
-        it follows the fsm and load it in the result
-        """
-        for char in content:
-            next_state = self.take_next_state(self.state, char)
-            if next_state is None:
-                return False
-
-            if next_state in (
-                State.SIGN,
-                State.NUMBER,
-                State.COMMA,
-                State.DECIMAL
-            ):
-                self.value += char
-
-            self.state = next_state
-        return True
-
-    def is_stopped(self) -> bool:
-        return self.state in (
-            State.DECIMAL,
-            State.END
-        )
-
-
-class FsmInteger:
-    def __init(self) -> None:
-        self.value = ""
-        self.state = State.START
-        self.delimiters = {'"', "\n", ","}
-
-    def take_next_state(self, state: State, char: Any) -> State:
-        if state == State.START:
-            if char in "-+":
-                return State.SIGN
-                
-            if char.isdigit():
-                return State.INTEGER
-                
-            if char.isspace():
-                return State.START
-                
-            return None
-
-        elif state == State.SIGN:
-            if char.isdigit():
-                return State.INTEGER
-                
-            return None
-
-        if state == State.INTEGER:
-            if char.isdigit():
-                return State.INTEGER
-                
-            if char in self.delimiters:
-                return State.END
-                
-            return None
-
-        return None
-
-    def verify_content(self, content: str) -> bool:
-        """
-        Check every character in the gotten string
-        if it follows the fsm state
-        """
-        state = self.state
-        for char in content:
-            state = self.take_next_state(state, char)
-            if state is None:
-                return False
-        return True
-
-    def check_and_load(self, content: str) -> bool:
-        """
-        Check the content gotten if 
-        it follows the fsm and load it in the result
-        """
-        for char in content:
-            next_state = self.take_next_state(self.state, char)
-            if next_state is None:
-                return False
-
-            if next_state in (
-                State.SIGN,
-                State.INTEGER,
-            ):
-                self.value += char
-
-            self.state = next_state
-        return True
-
-    def is_stopped(self) -> bool:
-        return self.state == State.END
 
 
 class GenerationParams:
@@ -288,8 +42,6 @@ class GenerationParams:
                 if string.verify_content(chosen):
                     token_id = token
                     break
-
-            # print(token_id)
 
             if token_id is None:
                 break
@@ -334,7 +86,7 @@ class GenerationParams:
 
     def gen_number_value(self) -> None | str:
         number = FsmNumber()
-        
+
         while not number.is_stopped():
             sorted_logits = self._get_sorted_logits()
 
@@ -422,7 +174,7 @@ class ConstraintParams:
         Get a dictionary of the function name as a key
         and its available parameters as values
         """
-        func_list = Parsing.parse_file("data/input/functions_definition.json")
+        func_list = self._func.get_func_list()
         needed_list = []
         for func in func_list:
             needed_list.append({
@@ -448,7 +200,6 @@ class ConstraintParams:
 
     def combine_param(
             self,
-            name_func: str,
             request: str
     ) -> dict[str, Any]:
         """
@@ -459,6 +210,9 @@ class ConstraintParams:
         Args:
             name_func: name of the function obtained by the LLM
         """
+
+        name_func = self._func.get_name_value(request)
+
         func_list = self.get_param_func()
 
         all_params = {}
@@ -467,7 +221,7 @@ class ConstraintParams:
 
         param_result = {}
         for func_name, param in all_params.items():
-            if func_name == name_func["name"]:
+            if func_name == name_func:
                 for param_key, param_type in param.items():
                     self.prompt = self.create_prompt(
                         query=request,

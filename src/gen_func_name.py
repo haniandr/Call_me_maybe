@@ -2,7 +2,6 @@ from typing import Any
 from parsing_file import Parsing
 from llm_sdk import Small_LLM_Model
 
-#
 # func_name = {
 #     "fn_add_numbers": "Add two numbers together and return their sum",
 #     "fn_greet": "Generate a greeting message for a person by name",
@@ -11,7 +10,7 @@ from llm_sdk import Small_LLM_Model
 #     "fn_substitute_string_with_regex": "Replace all" 
 #         "occurrences matching a regex pattern in a string"
 # }
-#
+
 
 class GenerationFuncName:
     def __init__(self) -> None:
@@ -19,18 +18,23 @@ class GenerationFuncName:
         self.prompt = ""
         self._parsed = Parsing()
 
-    def get_func_name(self) -> None:
-        func_name = []
+    def get_func_list(self) -> dict[str, Any] | list[dict[str, Any]]:
+        func_def_list = []
 
         content = self._parsed.parsing_arguments()
         function_list = content[1]
 
         for function in function_list:
-            func_name.append({
+            func_def_list.append({
                 "name": function.name,
-                "description": function.description
+                "description": function.description,
+                "parameters": {
+                    key: param.type.value
+                    for key, param in function.parameters.items()
+                },
+                "returns": function.returns.type.value
             })
-        return func_name
+        return func_def_list
 
     def create_prompt(
         self,
@@ -51,13 +55,12 @@ name: """
         i = 0
         result = []
 
-        func_name = self.get_func_name()
+        func_name = self.get_func_list()
 
         self.prompt = self.create_prompt(
             query=request,
             functions=func_name
         )
-        print(self.prompt)
 
         function_token = [
             self._model.encode(name).tolist()[0]
@@ -75,7 +78,6 @@ name: """
                 for name in function_token
                 if i < len(name) and name[:i] == result
             ]
-            print(candidates)
 
             if not candidates:
                 break
@@ -97,7 +99,7 @@ name: """
             #     if function == result:
             #         break
 
-        return {"name": self._model.decode(result).strip()}
+        return self._model.decode(result).strip()
 
 
 if __name__ == "__main__":

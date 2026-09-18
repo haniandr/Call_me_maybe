@@ -1,21 +1,36 @@
 from typing import Any
+from parsing_file import Parsing
 from llm_sdk import Small_LLM_Model
 
-
-func_name = {
-    "fn_add_numbers": "Add two numbers together and return their sum",
-    "fn_greet": "Generate a greeting message for a person by name",
-    "fn_reverse_string": "Reverse a string and return the reversed result",
-    "fn_get_square_root": "Calculate square root of the number",
-    "fn_substitute_string_with_regex": "Replace all" 
-        "occurrences matching a regex pattern in a string"
-}
-
+#
+# func_name = {
+#     "fn_add_numbers": "Add two numbers together and return their sum",
+#     "fn_greet": "Generate a greeting message for a person by name",
+#     "fn_reverse_string": "Reverse a string and return the reversed result",
+#     "fn_get_square_root": "Calculate square root of the number",
+#     "fn_substitute_string_with_regex": "Replace all" 
+#         "occurrences matching a regex pattern in a string"
+# }
+#
 
 class GenerationFuncName:
     def __init__(self) -> None:
         self._model = Small_LLM_Model()
         self.prompt = ""
+        self._parsed = Parsing()
+
+    def get_func_name(self) -> None:
+        func_name = []
+
+        content = self._parsed.parsing_arguments()
+        function_list = content[1]
+
+        for function in function_list:
+            func_name.append({
+                "name": function.name,
+                "description": function.description
+            })
+        return func_name
 
     def create_prompt(
         self,
@@ -35,6 +50,8 @@ name: """
     def get_name_value(self, request) -> dict[str, Any]:
         i = 0
         result = []
+
+        func_name = self.get_func_name()
 
         self.prompt = self.create_prompt(
             query=request,

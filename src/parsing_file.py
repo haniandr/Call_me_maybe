@@ -146,4 +146,3 @@ function_calling_results.json"))
 
         return args.output, func_def, input_test
 
-print(Parsing().parsing_arguments()[1])

@@ -4,6 +4,7 @@ from pydantic import (
     model_validator,
     ValidationError
 )
+from typing import Any
 from enum import Enum
 
 
@@ -49,7 +50,7 @@ class FunctionDefinition(BaseModel):
     """
     name: str = Field()
     description: str = Field()
-    parameters: dict[str, ParamsType] = Field()
+    parameters: dict[str, Any] = Field()
     returns: ReturnType
 
 

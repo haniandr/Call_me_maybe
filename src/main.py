@@ -15,13 +15,17 @@ class Browse:
         self._func = GenerationFuncName()
         self._param = ConstraintParams()
 
-    def check_output(self, output: dict[str, Any] -> bool:
-        verified_result = FunctionResult(
-            prompt=output["prompt"],
-            name=output["name"],
-            parameters=output["parameters"]
-        )
-        return verified_result
+    def check_output(self, output: dict[str, Any] -> list[FunctionResult] | None:
+        try:
+            verified_result = FunctionResult(
+                prompt=output["prompt"],
+                name=output["name"],
+                parameters=output["parameters"]
+            )
+            return verified_result
+        except ValidationError as e:
+            msg = e.errors()[0]["msg"]
+            sys.exit(f"Error gotten: {msg}")
         
 
     def write_to_output(self, output: dict[str, Any]) -> None:
@@ -36,8 +40,6 @@ class Browse:
                     for key, param in result.parameters.items()
                 }
             }
-        else:
-            sys.exit()
 
         try:
             with open(name, "w") as file:
@@ -71,19 +73,23 @@ class Browse:
                         "name": name,
                         "parameters": param
                     })
+                except Exception:
+                    sys.exit("No parameter or function generated")
+            if output:
+                for item in output:
                     self.write_to_output(output)
 
-        for p in prompts.prompt.prompt.value:
+        else:
+            p = prompts.prompt.prompt.value
             try:
                 name = self._func.get_name_value(p)
                 param = self._param.combine_param(p)
-
-                output = {
+                output.append({
                     "prompt": p,
                     "name": name,
                     "parameters": param
-                }
+                })
+                except Exception:
+                    sys.exit("No parameter or function generated")
+            if output:
                 self.write_to_output(output)
-
-            except Exception:
-                sys.exit("No parameter or function generated")

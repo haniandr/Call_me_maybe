@@ -15,7 +15,7 @@ class Browse:
         self._func = GenerationFuncName()
         self._param = ConstraintParams()
 
-    def check_output(self, output: dict[str, Any] -> list[FunctionResult] | None:
+    def check_output(self, output: dict[str, Any]) -> list[FunctionResult] | None:
         try:
             verified_result = FunctionResult(
                 prompt=output["prompt"],

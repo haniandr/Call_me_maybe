@@ -32,14 +32,26 @@ class Browse:
         name = self._parsed.parsing_arguments()[0]
         result = self.check_output(output)
         if result:
-            output = {
-                "prompt": result.prompt,
-                "name": result.name,
-                "parameters": {
-                    key: param
-                    for key, param in result.parameters.items()
+            if isinstance(output, dict):
+                output = {
+                    "prompt": result.prompt,
+                    "name": result.name,
+                    "parameters": {
+                        key: param
+                        for key, param in result.parameters.items()
+                    }
                 }
-            }
+            elif isinstance(output, list):
+                output = []
+                for res in result:
+                    output.append({
+                        "prompt": result.prompt,
+                        "name": result.name,
+                        "parameters": {
+                            key: param
+                            for key, param in result.parameters.items()
+                        }
+                    })
 
         try:
             with open(name, "w") as file:
@@ -75,9 +87,6 @@ class Browse:
                     })
                 except Exception:
                     sys.exit("No parameter or function generated")
-            if output:
-                for item in output:
-                    self.write_to_output(output)
 
         else:
             p = prompts.prompt.prompt.value
@@ -91,5 +100,7 @@ class Browse:
                 })
                 except Exception:
                     sys.exit("No parameter or function generated")
-            if output:
-                self.write_to_output(output)
+
+
+        if output:
+            self.write_to_output(output)

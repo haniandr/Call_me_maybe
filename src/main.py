@@ -36,7 +36,7 @@ class Browse:
                 "prompt": result.prompt,
                 "name": result.name,
                 "parameters": {
-                    key: param.type.value
+                    key: param
                     for key, param in result.parameters.items()
                 }
             }

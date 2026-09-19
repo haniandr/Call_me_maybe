@@ -40,7 +40,7 @@ class FunctionResult(BaseModel):
 
     prompt: str = Field()
     name: str = Field()
-    parameters: dict[str, ParamsType] = Field()
+    parameters: dict[str, Any] = Field()
 
 
 class FunctionDefinition(BaseModel):
@@ -50,7 +50,7 @@ class FunctionDefinition(BaseModel):
     """
     name: str = Field()
     description: str = Field()
-    parameters: dict[str, Any] = Field()
+    parameters: dict[str, ParamsType] = Field()
     returns: ReturnType
 
 

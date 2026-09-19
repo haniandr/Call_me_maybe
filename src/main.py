@@ -45,11 +45,11 @@ class Browse:
                 output = []
                 for res in result:
                     output.append({
-                        "prompt": result.prompt,
-                        "name": result.name,
+                        "prompt": res.prompt,
+                        "name": res.name,
                         "parameters": {
                             key: param
-                            for key, param in result.parameters.items()
+                            for key, param in res.parameters.items()
                         }
                     })
 

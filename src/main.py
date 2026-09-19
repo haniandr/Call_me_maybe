@@ -9,7 +9,7 @@ from extract_param import ConstraintParams
 from gen_func_name import GenerationFuncName
 
 
-class Browse:
+class Test:
     def __init__(self) -> None:
         self._parsed = Parsing()
         self._func = GenerationFuncName()
@@ -70,7 +70,7 @@ class Browse:
             sys.exit(f"No permission to open this file {name}.")
 
 
-    def browse_prompt(self) -> None:
+    def main(self) -> None:
         prompts = self._parsed.parsing_arguments()[2]
 
 

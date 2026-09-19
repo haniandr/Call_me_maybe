@@ -15,13 +15,29 @@ class Browse:
         self._func = GenerationFuncName()
         self._param = ConstraintParams()
 
-    def check_output(self, output: dict[str, Any] -> dict[str, Any] | None:
-        verified_result = {}
-        
+    def check_output(self, output: dict[str, Any] -> bool:
+        verified_result = FunctionResult(
+            prompt=output["prompt"],
+            name=output["name"],
+            parameters=output["parameters"]
+        )
+        return verified_result
         
 
     def write_to_output(self, output: dict[str, Any]) -> None:
         name = self._parsed.parsing_arguments()[0]
+        result = self.check_output(output)
+        if result:
+            output = {
+                "prompt": result.prompt,
+                "name": result.name,
+                "parameters": {
+                    key: param.type.value
+                    for key, param in result.parameters.items()
+                }
+            }
+        else:
+            sys.exit()
 
         try:
             with open(name, "w") as file:
@@ -53,8 +69,9 @@ class Browse:
                     output.append({
                         "prompt": p,
                         "name": name,
-                        "param": param
+                        "parameters": param
                     })
+                    self.write_to_output(output)
 
         for p in prompts.prompt.prompt.value:
             try:

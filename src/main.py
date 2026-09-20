@@ -16,7 +16,7 @@ model = Small_LLM_Model()
 class Test:
     def __init__(self) -> None:
         self._parsed = Parsing()
-        self._func = GenerationFuncName()
+        self._func = GenerationFuncName(model)
         self._param = ConstraintParams(model)
 
     def check_output(
@@ -118,3 +118,4 @@ class Test:
 
         if output:
             self.write_to_output(output)
+        print(output)

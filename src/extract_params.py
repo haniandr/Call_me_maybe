@@ -167,7 +167,7 @@ class ConstraintParams:
         self.prompt: str = ""
         self.model = model
         self._param = None
-        self._func = GenerationFuncName()
+        self._func = GenerationFuncName(model)
 
     def get_param_func(self) -> list[dict[str, Any]]:
         """
@@ -256,14 +256,4 @@ Functions:
 
 parameters:
 {param_key}: \""""
-
-
-if __name__ == "__main__":
-    model = Small_LLM_Model()
-    param = ConstraintParams(model)
-    request = "Calculate the square root of 1000"
-    func = GenerationFuncName()
-    name = func.get_name_value(request)
-    # print(name)
-    print(param.combine_param(name, request))
 

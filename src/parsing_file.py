@@ -3,7 +3,7 @@ import sys
 import json
 from typing import Any
 from pydantic import ValidationError, BaseModel
-from model import FunctionDefinition, FunctionCallingTest
+from .model import FunctionDefinition, FunctionCallingTest
 from pathlib import Path
 
 

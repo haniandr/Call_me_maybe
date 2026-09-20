@@ -15,7 +15,10 @@ class Test:
         self._func = GenerationFuncName()
         self._param = ConstraintParams()
 
-    def check_output(self, output: dict[str, Any]) -> list[FunctionResult] | None:
+    def check_output(
+        self,
+        output: dict[str, Any] | list[dict[str, Any]]
+    ) -> list[FunctionResult] | None:
         try:
             verified_result = FunctionResult(
                 prompt=output["prompt"],
@@ -89,6 +92,7 @@ class Test:
                     sys.exit("No parameter or function generated")
 
         else:
+            output = {}
             p = prompts.prompt.prompt.value
             try:
                 name = self._func.get_name_value(p)
@@ -98,7 +102,7 @@ class Test:
                     "name": name,
                     "parameters": param
                 })
-                except Exception:
+            except Exception:
                     sys.exit("No parameter or function generated")
 
 

@@ -18,14 +18,21 @@ class Test:
     def check_output(
         self,
         output: dict[str, Any] | list[dict[str, Any]]
-    ) -> list[FunctionResult] | None:
+    ) -> FunctionResult | list[FunctionResult] | None:
         try:
-            verified_result = FunctionResult(
-                prompt=output["prompt"],
-                name=output["name"],
-                parameters=output["parameters"]
-            )
-            return verified_result
+            if isinstance(output, dict):
+                return FunctionResult(
+                    prompt=output["prompt"],
+                    name=output["name"],
+                    parameters=output["parameters"]
+                )
+            return [
+                FunctionResult(
+                    prompt=item["prompt"],
+                    name=item["name"],
+                    parameters=item["parameters"]
+                ) for item in output
+            ]
         except ValidationError as e:
             msg = e.errors()[0]["msg"]
             sys.exit(f"Error gotten: {msg}")
@@ -76,7 +83,6 @@ class Test:
     def main(self) -> None:
         prompts = self._parsed.parsing_arguments()[2]
 
-
         if len(prompts) > 1:
             output = []
             for p in prompts.prompt.prompt.prompt.value:
@@ -97,11 +103,11 @@ class Test:
             try:
                 name = self._func.get_name_value(p)
                 param = self._param.combine_param(p)
-                output.append({
+                output = {
                     "prompt": p,
                     "name": name,
                     "parameters": param
-                })
+                }
             except Exception:
                     sys.exit("No parameter or function generated")
 

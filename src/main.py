@@ -1,6 +1,7 @@
 import json
 import sys
 import os
+from llm_sdk import Small_LLM_Model
 from typing import Any
 from pydantic import ValidationError
 from .parsing_file import Parsing
@@ -9,11 +10,14 @@ from .extract_params import ConstraintParams
 from .gen_func_name import GenerationFuncName
 
 
+model = Small_LLM_Model()
+
+
 class Test:
     def __init__(self) -> None:
         self._parsed = Parsing()
         self._func = GenerationFuncName()
-        self._param = ConstraintParams()
+        self._param = ConstraintParams(model)
 
     def check_output(
         self,

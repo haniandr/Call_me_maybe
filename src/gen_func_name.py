@@ -1,5 +1,5 @@
 from typing import Any
-from parsing_file import Parsing
+from .parsing_file import Parsing
 from llm_sdk import Small_LLM_Model
 
 # func_name = {

@@ -1,11 +1,11 @@
 from typing import Any
-from statemachine import (
+from .statemachine import (
         FsmString,
         FsmInteger,
         FsmNumber
 )
-from gen_func_name import GenerationFuncName
-from llm_sdk import Small_LLM_Model
+from .gen_func_name import GenerationFuncName
+from .llm_sdk import Small_LLM_Model
 
 
 class GenerationParams:

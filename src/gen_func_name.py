@@ -13,8 +13,8 @@ from llm_sdk import Small_LLM_Model
 
 
 class GenerationFuncName:
-    def __init__(self) -> None:
-        self._model = Small_LLM_Model()
+    def __init__(self, model: Small_LLM_Model) -> None:
+        self._model = model
         self.prompt = ""
         self._parsed = Parsing()
 
@@ -100,8 +100,3 @@ name: """
             #         break
 
         return self._model.decode(result).strip()
-
-
-if __name__ == "__main__":
-     gen = GenerationFuncName()
-     print(gen.get_name_value("Hello world reverse"))

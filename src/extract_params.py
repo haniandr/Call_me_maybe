@@ -5,7 +5,7 @@ from .statemachine import (
         FsmNumber
 )
 from .gen_func_name import GenerationFuncName
-from .llm_sdk import Small_LLM_Model
+from llm_sdk import Small_LLM_Model
 
 
 class GenerationParams:

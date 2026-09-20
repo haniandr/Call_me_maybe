@@ -5,7 +5,7 @@ from typing import Any
 from pydantic import ValidationError
 from .parsing_file import Parsing
 from .model import FunctionResult
-from .extract_param import ConstraintParams
+from .extract_params import ConstraintParams
 from .gen_func_name import GenerationFuncName
 
 

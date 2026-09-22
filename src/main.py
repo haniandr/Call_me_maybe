@@ -23,6 +23,9 @@ class Test:
         self,
         output: dict[str, Any] | list[dict[str, Any]]
     ) -> FunctionResult | list[FunctionResult] | None:
+        """
+        Validate the output gotten if it follows the appropriate type
+        """
         try:
             if isinstance(output, dict):
                 return FunctionResult(
@@ -35,87 +38,88 @@ class Test:
                     prompt=item["prompt"],
                     name=item["name"],
                     parameters=item["parameters"]
-                ) for item in output
+                )
+                for item in output
             ]
         except ValidationError as e:
             msg = e.errors()[0]["msg"]
             sys.exit(f"Error gotten: {msg}")
-        
 
     def write_to_output(self, output: dict[str, Any]) -> None:
         name = self._parsed.parsing_arguments()[0]
         result = self.check_output(output)
-        if result:
-            if isinstance(output, dict):
-                output = {
-                    "prompt": result.prompt,
-                    "name": result.name,
-                    "parameters": {
-                        key: param
-                        for key, param in result.parameters.items()
-                    }
-                }
-            elif isinstance(output, list):
-                output = []
-                for res in result:
-                    output.append({
-                        "prompt": res.prompt,
-                        "name": res.name,
-                        "parameters": {
-                            key: param
-                            for key, param in res.parameters.items()
-                        }
-                    })
+
+        if result is None:
+            sys.exit("Can't write in the output file")
+
+        if isinstance(result, FunctionResult):
+            output = result.model_dump()
+
+        else:
+            output = [
+                res.model_dump()
+                for res in result
+            ]
 
         try:
+            os.makedirs(os.path.dirname(name), exist_ok=True)
             with open(name, "w") as file:
                 json.dump(output, file, indent=4)
-
-        except json.JSONDecodeError:
-            sys.exit(f"You have an invalid format JSON in the file '{name}'")
-
-        except ValidationError as e:
-            sys.exit(f"Error found: {e}")
-
-        except os.OSError:
-            sys.exit(f"This file {name} already exists")
 
         except PermissionError:
             sys.exit(f"No permission to open this file {name}.")
 
+        except OSError:
+            sys.exit(f"This file {name} already exists")
 
     def main(self) -> None:
-        prompts = self._parsed.parsing_arguments()[2]
+        """
+        The main of this projects where the projects
+        do all of tests and write the output in the output_file
+        """
+        try:
+            prompts = self._parsed.parsing_arguments()[2]
 
-        if len(prompts) > 1:
-            output = []
-            for p in prompts.prompt.prompt.prompt.value:
-                try:
-                    name = self._func.get_name_value(p)
-                    param = self._param.combine_param(p)
+            if isinstance(prompts, list):
+                output = []
+
+                for p in prompts:
+                    request = p.prompt
+
+                    name = self._func.get_name_value(request)
+                    if name is None:
+                        print("The function has no name, the generation "
+                              "stops here...")
+                        continue
+
+                    param = self._param.combine_param(
+                        name,
+                        request
+                    )
+                    print(param)
+
                     output.append({
-                        "prompt": p,
+                        "prompt": request,
                         "name": name,
                         "parameters": param
                     })
-                except Exception:
-                    sys.exit("No parameter or function generated")
 
-        else:
-            output = {}
-            p = prompts.prompt.prompt.value
-            try:
+            else:
+                output = {}
+                p = prompts.prompt
                 name = self._func.get_name_value(p)
-                param = self._param.combine_param(p)
+
+                param = self._param.combine_param(name, p)
+                print(param)
+
                 output = {
                     "prompt": p,
                     "name": name,
                     "parameters": param
                 }
-            except Exception:
-                    sys.exit("No parameter or function generated")
 
-
-        if output:
-            self.write_to_output(output)
-        print(output)
+            if output:
+                self.write_to_output(output)
+            print(output)
+        except KeyboardInterrupt:
+            sys.exit("Don't interrupt the process.")

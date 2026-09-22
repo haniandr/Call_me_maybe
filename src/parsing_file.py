@@ -37,8 +37,8 @@ class Parsing:
 
     def parse_test(
             self,
-            content: list[dict[str, Any]]
-    ) -> list[FunctionCallingTest]:
+            content: list[dict[str, Any]] | dict[str, Any]
+    ) -> list[FunctionCallingTest] | FunctionCallingTest:
         """
         Parse the file with the user's question
         and return an object validated by pydantic
@@ -48,12 +48,15 @@ class Parsing:
             An list of object validated by pydantic
         """
 
-        input_test = []
-        for item in content:
-            input_test.append(FunctionCallingTest(
-                prompt=item["prompt"]
-            ))
-        return input_test
+        if isinstance(content, list):
+            input_test = []
+            for item in content:
+                input_test.append(FunctionCallingTest(
+                    prompt=item["prompt"]
+                ))
+            return input_test
+        elif isinstance(content, dict):
+            return FunctionCallingTest(prompt=content["prompt"])
 
     def parse_file(
             self,
@@ -87,6 +90,8 @@ class Parsing:
             if model == FunctionCallingTest:
                 return self.parse_test(data)
 
+            return None
+
         except json.JSONDecodeError:
             sys.exit(f"You have an invalid format JSON in the file '{name}'")
 
@@ -101,9 +106,18 @@ class Parsing:
 
     def parsing_arguments(self) -> (
             tuple[Path, list[FunctionDefinition],
-                  list[FunctionCallingTest]]):
+                  (
+                    list[FunctionCallingTest] |
+                    FunctionCallingTest
+                    )]):
         """
-        The root of the parsing
+        Parse the arguments on the command line or if not
+        it exists by default
+
+        Return:
+             a tuple with the path of the output 
+        with the list of functions validated on pydantic
+        and the list or dictionnary of the input file with the tests 
         """
         parser = argparse.ArgumentParser()
 

@@ -179,7 +179,7 @@ class FsmNumber:
 
 
 class FsmInteger:
-    def __init(self) -> None:
+    def __init__(self) -> None:
         self.value = ""
         self.state = State.START
         self.delimiters = {'"', "\n", ","}
@@ -188,28 +188,28 @@ class FsmInteger:
         if state == State.START:
             if char in "-+":
                 return State.SIGN
-                
+
             if char.isdigit():
                 return State.INTEGER
-                
+
             if char.isspace():
                 return State.START
-                
+
             return None
 
         elif state == State.SIGN:
             if char.isdigit():
                 return State.INTEGER
-                
+
             return None
 
         if state == State.INTEGER:
             if char.isdigit():
                 return State.INTEGER
-                
+
             if char in self.delimiters:
                 return State.END
-                
+
             return None
 
         return None
@@ -247,4 +247,3 @@ class FsmInteger:
 
     def is_stopped(self) -> bool:
         return self.state == State.END
-

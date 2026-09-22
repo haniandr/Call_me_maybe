@@ -21,8 +21,7 @@ class GenerationFuncName:
     def get_func_list(self) -> dict[str, Any] | list[dict[str, Any]]:
         func_def_list = []
 
-        content = self._parsed.parsing_arguments()
-        function_list = content[1]
+        function_list = self._parsed.parsing_arguments()[1]
 
         for function in function_list:
             func_def_list.append({
@@ -35,6 +34,15 @@ class GenerationFuncName:
                 "returns": function.returns.type.value
             })
         return func_def_list
+
+    def get_func_name(self) -> dict[str, str]:
+        func_list = self.get_func_list()
+        func_name = {}
+
+        for element in func_list:
+            func_name[element["name"]] = element["description"]
+
+        return func_name
 
     def create_prompt(
         self,
@@ -55,7 +63,7 @@ name: """
         i = 0
         result = []
 
-        func_name = self.get_func_list()
+        func_name = self.get_func_name()
 
         self.prompt = self.create_prompt(
             query=request,

@@ -1,162 +1,8 @@
+import sys
 from typing import Any
-from .statemachine import (
-        FsmString,
-        FsmInteger,
-        FsmNumber
-)
 from .gen_func_name import GenerationFuncName
 from llm_sdk import Small_LLM_Model
-
-
-class GenerationParams:
-    def __init__(
-        self,
-        prompt: str,
-        model: Small_LLM_Model
-    ) -> None:
-        self._model = model
-        self.prompt: str = prompt
-        self.delimiters = {'"', "\n", ","}
-
-    def _get_sorted_logits(self) -> list[int]:
-        input_ids = self._model.encode(self.prompt)
-
-        logits = self._model.get_logits_from_input_ids(
-            input_ids.tolist()[0]
-        )
-
-        return sorted(
-                range(len(logits)),
-                key=lambda x: logits[x],
-                reverse=True
-            )
-
-    def gen_string_value(self) -> None | str:
-        string = FsmString()
-        while not string.is_stopped():
-            sorted_logits = self._get_sorted_logits()
-            token_id = None
-
-            for token in sorted_logits:
-                chosen = self._model.decode(token)
-                if string.verify_content(chosen):
-                    token_id = token
-                    break
-
-            if token_id is None:
-                break
-
-            word = self._model.decode(token_id)
-
-            if not string.check_and_load(word):
-                return None
-
-            self.prompt += word
-
-        return string.value
-
-    def gen_integer_value(self) -> None | str:
-        integer = FsmInteger()
-
-        while not integer.is_stopped():
-            sorted_logits = self._get_sorted_logits()
-
-            token_id = None
-
-            for token in sorted_logits:
-                chosen = self._model.decode(token)
-                if integer.verify_content(chosen):
-                    token_id = token
-                    break
-
-            if token_id is None:
-                break
-
-            word = self._model.decode(token_id)
-
-            if not integer.check_and_load(word):
-                return None
-
-            self.prompt += word
-
-        if not integer.is_stopped():
-            return None
-
-        return integer.value
-
-    def gen_number_value(self) -> None | str:
-        number = FsmNumber()
-
-        while not number.is_stopped():
-            sorted_logits = self._get_sorted_logits()
-
-            token_id = None
-
-            for token in sorted_logits:
-                chosen = self._model.decode(token)
-                if number.verify_content(chosen):
-                    token_id = token
-                    break
-
-            if token_id is None:
-                break
-
-            word = self._model.decode(token_id)
-            if not number.check_and_load(word):
-                return None
-    
-            self.prompt += word
-
-        if not number.is_stopped():
-            return None
-
-        return number.value
-
-    def gen_boolean_value(self) -> None | str:
-        waited_value = ["true", "True", "false", "False"]
-
-        value = ""
-
-        sorted_logits = self._get_sorted_logits()
-
-        waited_token = []
-
-        for item in waited_value:
-            ids = self._model.encode(item).tolist()[0]
-            waited_token.extend(ids)
-
-        while True:
-            input_ids = self._model.encode(self.prompt).tolist()[0]
-            logits = self._model.get_logits_from_input_ids(input_ids)
-
-            waited_token = self._model.encode(waited_value)
-
-            sorted_logits = sorted(
-                range(len(logits)),
-                key=lambda x: logits[x],
-                reverse=True
-            )
-
-            for token in sorted_logits:
-                if token in waited_token:
-                    word = self._model.decode(token)
-                    value += word
-                    return value
-
-        return None
-
-
-    def choose_function(self, param_type: str) -> None | str:
-        if param_type == "number" or param_type == "float":
-            return self.gen_number_value()
-
-        elif param_type == "integer":
-            return self.gen_integer_value()
-
-        elif param_type == "boolean":
-            return self.gen_boolean_value()
-
-        return self.gen_string_value()
+from .generator_fsm import GenerationParams
 
 
 class ConstraintParams:
@@ -179,11 +25,9 @@ class ConstraintParams:
         for func in func_list:
             needed_list.append({
                 "name": func["name"],
-                "parameters": {
-                    key: value
-                    for key, value in func["parameters"].items()
-                }
+                "parameters": func["parameters"]
             })
+
         return needed_list
 
     def transform_to_real_type(self, param_type: str, word: str) -> Any:
@@ -200,6 +44,7 @@ class ConstraintParams:
 
     def combine_param(
             self,
+            name_func: str,
             request: str
     ) -> dict[str, Any]:
         """
@@ -210,35 +55,39 @@ class ConstraintParams:
         Args:
             name_func: name of the function obtained by the LLM
         """
+        try:
+            func_list = self.get_param_func()
 
-        name_func = self._func.get_name_value(request)
+            all_params = {}
+            for func in func_list:
+                all_params[func["name"]] = func["parameters"]
 
-        func_list = self.get_param_func()
-
-        all_params = {}
-        for func in func_list:
-            all_params[func["name"]] = func["parameters"]
-
-        param_result = {}
-        for func_name, param in all_params.items():
-            if func_name == name_func:
-                for param_key, param_type in param.items():
-                    self.prompt = self.create_prompt(
-                        query=request,
-                        func_param=name_func["name"],
-                        param_key=param_key,
-                        types = param_type
-                    )
-
-                    self._param = GenerationParams(self.prompt, self.model)
-
-                    res = self._param.choose_function(param_type)
-                    if res:
-                        res_typed = self.transform_to_real_type(
-                            param_type, res
+            param_result = {}
+            for func_name, param in all_params.items():
+                self.prompt = ""
+                if func_name != name_func:
+                    continue
+                elif func_name == name_func:
+                    for param_key, param_type in param.items():
+                        self.prompt += self.create_prompt(
+                            query=request,
+                            func_param=name_func,
+                            param_key=param_key,
+                            types = param_type
                         )
-                        param_result[param_key] = res_typed
-        return param_result
+
+                        self._param = GenerationParams(self.prompt, self.model)
+
+                        res = self._param.choose_function(param_type)
+                        if res:
+                            res_typed = self.transform_to_real_type(
+                                param_type, res
+                            )
+                            param_result[param_key] = res_typed
+                            self.prompt += res + '"\n'
+            return param_result
+        except KeyboardInterrupt:
+            sys.exit("Still generating the parameters :(!!")
 
     def create_prompt(
         self,
@@ -247,13 +96,38 @@ class ConstraintParams:
         param_key: str,
         types: str
     ) -> str:
-        return f"""Only change the value when necessary.
+        return f"""Extract the value.
 
 query: {query}
 
 Functions:
 {func_param}
 
-parameters:
+parameters: {types}
 {param_key}: \""""
 
+#
+# def main():
+#     model = Small_LLM_Model()
+#     param = ConstraintParams(model)
+#     func = GenerationFuncName(model)
+#
+#     # prompt = "What is the sum of 5 and 3?"
+#     # name = func.get_name_value(prompt)
+#     # print(param.combine_param(name, prompt))
+#     prompt = Parsing().parsing_arguments()[2]
+#     # print(type(prompt))
+#     if isinstance(prompt, list):
+#          for p in prompt:
+#             request = p.prompt
+#             name = func.get_name_value(request)
+#             print(param.combine_param(name, request))
+#
+#     else:
+#         p = prompt.prompt
+#         name = func.get_name_value(p)
+#         print(param.combine_param(name,p))
+#
+#
+# if __name__ == "__main__":
+#     main()

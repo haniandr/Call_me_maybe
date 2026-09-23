@@ -31,4 +31,14 @@ Output:
 
 The project conbines several knowledges and phases:
 
--  
+-  Python language 
+-  Small_LLM_Model
+-  POO
+-  Logits and tokens for constrained decoding
+-  Finite State Machine(FSM)
+-  Pydantic for validation
+-  JSON
+-  Argparse module for the command-line arguments parsing
+
+
+## Instructions

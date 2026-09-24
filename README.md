@@ -113,27 +113,37 @@ uv run python3 -m src  [–functions_definition <function_definition_file>]
 **Constrained decoding** is very useful and efficient to control output format even the result given by the LLM.
 
 Normally, the LLM predicts the next text or word based on the tokens that comes before it. I use two different approaches to generate my output for the functions and the parameters.
+    
+### Function generation:
+  - tokenize all functions name in extracted from the input functions_definitions file 
 
-  - First, for the **function generation**:
+  - verify each token with the logits max if it is the same as in the list of allowed tokens 
 
-I select the name of the function by taking only the allowed token which are a list of functions names already tokenized, if the next token must probable is inside, just filter the list and decode into a word. And in sum, I always got a function name one of the defined.
+  - if it's in it only that reselect the list of tokens with the token gotten and let the unselected out.
 
-Example:
+  - repeat the process until we got one of the expected function name and no left token inside of the list of allowed tokens. 
 
+    
 
-```
-
-
-
-```
-
-
-  - Second, for the **parameter generation**:
+### Parameter generation:
 
 I used **Finite State Machine** to restrict the word generated the LLM, actually, it only constrained the format like if the type the parameter is a "float" there is a FSMNumber to check if the token decoded is really a float or not, it restricts the format and the type that should fill the parameter.
 
+ - A class of FSM for each possible type
+
+ - if the LLM generate a word, there is a function to check only the format of the word if it's accepted by the State machine 
+
+ - if it's accepted, another function that recall that function and if it's True, stock the value in a string 
+
+ - the main of the generation is in the file `generator_fsm.py` that do the generation, verify if the token generation is in the end of the state
 
 
-<!-- ## Design decisions: -->
+## Design decisions:
 
+ - **Pydantic**: for validation of the input and the ouput content(functions, tests and the results gotten).
 
+ - **FSM**: for the parameters because it's more reassuring for the different type of the arguments and checking every word so that we can interrupt the generation instead of letting the LLM generating the all.
+
+ - **argparse** module: for the parsing on the command-line arguments and for defining default path if there isn't.
+
+ - Constrained decoding of the function by sorting the logits given by the LLM and check the token if it's one of the token expected 

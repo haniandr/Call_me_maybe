@@ -17,7 +17,8 @@ Request:
 What is the sum of 3 and 4?
 ```
 Output:
-```
+
+```json
 {
     "prompt": "What is the sum of 2 and 3?",
     "name": "fn_add_numbers",
@@ -45,7 +46,7 @@ The project conbines several knowledges and phases:
 
 Before installing all packages, change the UV and huggingface cache places:
 
-```
+```Bash
 export HF_HOME="/home/$(USER)/goinfre/.cache/huggingface"
 export UV_CACHE_DIR="/home/$(USER)/goinfre/.uv_cache"
 ```
@@ -54,31 +55,31 @@ export UV_CACHE_DIR="/home/$(USER)/goinfre/.uv_cache"
 
 - To install dependencies:
 
-```
+```Bash
 make install
 ```
 
 - To run the program:
 
-```
+```Bash
 make run
 ```
 
 - To debug:
 
-```
+```bash
 make debug
 ```
 
 - To remove caches:
 
-```
+```bash
 make clean
 ```
 
 - To check code quality with the norms and typing:
 
-```
+```bash
 make lint
 make lint-strict
 ```
@@ -105,9 +106,15 @@ uv run python3 -m src  [–functions_definition <function_definition_file>]
 
 ## **Resources**
 
-...........
+### Documentation
+- [LLM docs] (https://blog.stephane-robert.info/docs/developper/programmation/python/llm/)
+- argparse: https://docs.python.org/3/library/argparse.html
+- JSON: https://docs.python.org/3/library/json.html
+- Pydantic for **the model_dump()** https://docs.pydantic.dev/
+- uv: https://docs.astral.sh/uv/.
 
-
+The AI was used to enforce the explaination of the LLM and its process also the FSM usage, and about debugging the parameter generation. 
+  
 ## Algorithm explaination
 
 **Constrained decoding** is very useful and efficient to control output format even the result given by the LLM.
@@ -146,4 +153,130 @@ I used **Finite State Machine** to restrict the word generated the LLM, actually
 
  - **argparse** module: for the parsing on the command-line arguments and for defining default path if there isn't.
 
- - Constrained decoding of the function by sorting the logits given by the LLM and check the token if it's one of the token expected 
+ - Constrained decoding of the function by sorting the logits given by the LLM and check the token if it's one of the token expected
+
+
+## Perfomance analysis:
+
+The performance of this projects depends a lot on the constrained decoding and the LLM generation with the system prompt.
+
+### Accuracy:
+
+The constrained decoding approach helps the model generate valid function calls.
+
+The function name is selected from the functions defined in `functions_definition.json` which prevent the model from generating an unknown function.
+
+For the parameters ,the FSM checks whether the generated tokens are valid for the expected type. For example, an integer parameter cannot contain letters, while a string parameter must respect the string format.
+
+The result gotten is finally checked using Pydantic models.
+
+
+### Speed:
+
+Constrained decoding requires more work as well as it needs time to generate the output not as the time of a LLM generation.
+
+For each prompt, the program must:
+ - get the logits from the model
+ - select possible allowed tokens
+ - check whether they are allowed
+ - update the current FSM state
+ - continue the generation if it's accepted
+
+This additional process makes generation longer than a normal LLM but in sum, with the 11 prompts given in the input file, it takes `less than 2 minutes` to generate all these results.
+
+### Reliability
+
+- The **function name** is ensured because the function name gotten must be one of the whole names defined in the `functions_definition.json` and if the expected name doesn't exist inside, the LLM don't generate whatever it wants but the only most probable of all the function names existing.
+
+- The **FSM** for the parameter generation restrict the tokens to not generate other than the type expected.
+
+They are checked again before adding in the final result.
+
+- **Pydantic validation** checks the final structure if it matches a JSON format.
+
+
+## Challenges Faced
+
+### Understanding LLM:
+
+One of the most difficulties was understanding the LLM and its all process.
+
+Mostly, the logits, they are given by the model to possible next token and its the vocabulary existing with probabilities. 
+
+### Generating several parameters
+
+Some functions require several parameters.
+
+For example:
+
+fn_substitute_string_with_regex
+
+requires:
+
+source_string
+regex
+replacement
+
+The generation must therefore correctly move from one parameter to the next without losing the JSON structure.
+
+### Managing the FSM
+
+Another challenge was handling the different states needed for strings and numbers.
+
+For example, numbers can contain:
+
+-10
+3.14
+42
+
+
+while strings need quotation marks and can contain special characters.
+
+## Testing strategy
+
+It was tested at different levels and tests.
+
+- **Function selection**: different requests were used to test if the correct function was selected
+
+- **Parameter generation**: some basic parameter type were tested, including string, integer, float and boolean.
+
+- **FSM validation**: valid and invalid values for each type to ensure that the word generated is accepted by the state machines
+
+- **MULTIPLE and COMPLEX parameters**: functions requiring some parameters were tested such as `fn_substitute_string_with_regex`. It depends on prompt, fsm, the generation process.
+
+- **Final output**: the generated result was checked to make sure it follows the expected structure, type and can be validated by Pydantic.
+
+
+## Example usage:
+
+You can launch the program with:
+
+```bash
+uv run python3 -m src
+```
+
+You can also define the definition file, the input file and the output:
+```bash
+uv run python3 -m src \
+--functions_definition data/input/functions_definition.json \
+--input data/input/function_calling_tests.json \
+--output data/output/function_calls.json
+```
+
+An example of input test:
+```
+Replace "cat" with "dog" in "the cat is here"
+```
+
+The output gotten:
+```json
+{
+    "prompt": "Substitute the word 'cat' with 'dog' in 'The cat is here'",
+    "name": "fn_substitute_string_with_regex",
+    "parameters": {
+        "source_string": "The cat is here",
+        "regex": "cat",
+        "replacement": "dog"
+    }
+}
+```

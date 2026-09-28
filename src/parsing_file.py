@@ -14,7 +14,9 @@ class Parsing:
     def parse_function(
             self,
             content: list[dict[str, Any]]
-    ) -> list[FunctionDefinition]:
+                | dict[str, Any]
+                | None
+    ) -> list[FunctionDefinition] | None:
         """
         Function that validate the file content
         in the functions_definition file with all the
@@ -24,21 +26,44 @@ class Parsing:
             A list of pydantic validated or not with
             FunctionDefinition
         """
-
+        required_keys = {
+            "name",
+            "description",
+            "parameters",
+            "returns"
+        }
         function_list = []
-        for function in content:
+        if isinstance(content, list):
+            for function in content:
+                if not required_keys.issubset(function.keys()):
+                    sys.exit("Missing key in the"
+                             "\"data/input/function_calling_tests.json\"")
+
+                function_list.append(FunctionDefinition(
+                    name=function["name"],
+                    description=function["description"],
+                    parameters=function["parameters"],
+                    returns=function["returns"]
+                ))
+
+        elif isinstance(content, dict):
+            if not required_keys.issubset(content.key()):
+                    sys.exit("Missing key")
+
             function_list.append(FunctionDefinition(
-                name=function["name"],
-                description=function["description"],
-                parameters=function["parameters"],
-                returns=function["returns"]
-            ))
+                    name=content["name"],
+                    description=content["description"],
+                    parameters=content["parameters"],
+                    returns=content["returns"]
+                ))
         return function_list
 
     def parse_test(
             self,
-            content: list[dict[str, Any]] | dict[str, Any]
-    ) -> list[FunctionCallingTest] | FunctionCallingTest:
+            content: list[dict[str, Any]]
+                | dict[str, Any]
+                | None
+    ) -> list[FunctionCallingTest] | FunctionCallingTest | None:
         """
         Parse the file with the user's question
         and return an object validated by pydantic
@@ -48,14 +73,26 @@ class Parsing:
             An list of object validated by pydantic
         """
 
+        required_keys = {"prompt"}
+
+        if content is None:
+            sys.exit("Missing prompt. No content in the file")
+
         if isinstance(content, list):
             input_test = []
             for item in content:
+                if not required_keys.issubset(item.keys()):
+                    sys.exit("Missing key \"prompt\"")
+
                 input_test.append(FunctionCallingTest(
                     prompt=item["prompt"]
                 ))
             return input_test
+
         elif isinstance(content, dict):
+            if not required_keys.issubset(content):
+                sys.exit("Missing key \"prompt\"")
+
             return FunctionCallingTest(prompt=content["prompt"])
 
     def parse_file(
@@ -127,6 +164,9 @@ class Parsing:
                             default=Path("data/input/\
 functions_definition.json"))
 
+        parser.add_argument("--model",
+                            default="Qwen/Qwen3-0.6B")
+
         parser.add_argument("--input", type=Path,
                             default=Path("data/input/\
 function_calling_tests.json"))
@@ -158,5 +198,5 @@ function_calling_results.json"))
             FunctionCallingTest
         )
 
-        return args.output, func_def, input_test
+        return args.output, func_def, input_test, args.model
 

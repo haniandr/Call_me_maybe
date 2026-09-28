@@ -1,3 +1,4 @@
+import math
 from enum import Enum, auto
 from typing import Any
 
@@ -17,11 +18,11 @@ class State(str, Enum):
 class FsmString:
     def __init__(self) -> None:
         self.value = ""
-        self.state = State.START
+        self.state: State | None = State.START
 
     def take_next_state(
         self,
-        state: State,
+        state: State | None,
         char: Any
     ) -> State | None:
         if state == State.START:
@@ -45,21 +46,25 @@ class FsmString:
 
     def verify_content(self, content: str) -> bool:
         """
-        Verify if the content is accepted by the fsm 
+        Verify if the content is accepted by the fsm
         without modifying the actual state.
         """
-        state = self.state
+        state: State | None = self.state
+
         for char in content:
             state = self.take_next_state(state, char)
             if state is None:
                 return False
+
         return True
-        
+
     def check_and_load(self, content: str) -> bool:
         for char in content:
-            next_state = self.take_next_state(
-                self.state, char
+            next_state: State | None = self.take_next_state(
+                self.state,
+                char
             )
+
             if self.state == State.START:
                 self.state = State.STRING
 
@@ -72,12 +77,14 @@ class FsmString:
                     self.value += char
                     self.state = next_state
                 continue
+
             if self.state == State.ESCAPE:
                 self.value += char
                 self.state = State.STRING
                 continue
             else:
                 return False
+
         return True
 
     def is_stopped(self) -> bool:
@@ -93,7 +100,11 @@ class FsmNumber:
         self.state = State.START
         self.delimiters = {'"', "\"", "\n"}
 
-    def take_next_state(self, state: State, char: Any) -> None | State:
+    def take_next_state(
+        self,
+        state: State | None,
+        char: Any
+    ) -> None | State:
         if state == State.START:
             if char in "-+":
                 return State.SIGN
@@ -143,20 +154,26 @@ class FsmNumber:
         Verify the state if it's valid for every
         character in the gotten string.
         """
-        state = self.state
+        state: State | None = self.state
+
         for char in content:
             state = self.take_next_state(state, char)
             if state is None:
                 return False
+
         return True
 
     def check_and_load(self, content: str) -> bool:
         """
-        Check the content gotten if 
+        Check the content gotten if
         it follows the fsm and load it in the result
         """
         for char in content:
-            next_state = self.take_next_state(self.state, char)
+            next_state = self.take_next_state(
+                self.state,
+                char
+            )
+
             if next_state is None:
                 return False
 
@@ -164,17 +181,18 @@ class FsmNumber:
                 State.SIGN,
                 State.NUMBER,
                 State.COMMA,
-                State.DECIMAL
+                State.DECIMAL,
             ):
                 self.value += char
 
             self.state = next_state
+
         return True
 
     def is_stopped(self) -> bool:
         return self.state in (
             State.DECIMAL,
-            State.END
+            State.END,
         )
 
 
@@ -184,7 +202,11 @@ class FsmInteger:
         self.state = State.START
         self.delimiters = {'"', "\n", ","}
 
-    def take_next_state(self, state: State, char: Any) -> State:
+    def take_next_state(
+        self,
+        state: State | None,
+        char: Any
+    ) -> State | None:
         if state == State.START:
             if char in "-+":
                 return State.SIGN
@@ -219,20 +241,27 @@ class FsmInteger:
         Check every character in the gotten string
         if it follows the fsm state
         """
-        state = self.state
+        state: State | None = self.state
+
         for char in content:
-            state = self.take_next_state(state, char)
-            if state is None:
+            next_state = self.take_next_state(state, char)
+            if next_state is None:
                 return False
+            state = next_state
+
         return True
 
     def check_and_load(self, content: str) -> bool:
         """
-        Check the content gotten if 
+        Check the content gotten if
         it follows the fsm and load it in the result
         """
         for char in content:
-            next_state = self.take_next_state(self.state, char)
+            next_state = self.take_next_state(
+                self.state,
+                char
+            )
+
             if next_state is None:
                 return False
 
@@ -243,6 +272,7 @@ class FsmInteger:
                 self.value += char
 
             self.state = next_state
+
         return True
 
     def is_stopped(self) -> bool:

@@ -107,7 +107,8 @@ uv run python3 -m src  [–functions_definition <function_definition_file>]
 ## **Resources**
 
 ### Documentation
-- [LLM docs] (https://blog.stephane-robert.info/docs/developper/programmation/python/llm/)
+- Qwen: (https://huggingface.co/Qwen/Qwen3-0.6B)
+- LLM docs: (https://blog.stephane-robert.info/docs/developper/programmation/python/llm/)
 - argparse: https://docs.python.org/3/library/argparse.html
 - JSON: https://docs.python.org/3/library/json.html
 - Pydantic for **the model_dump()** https://docs.pydantic.dev/

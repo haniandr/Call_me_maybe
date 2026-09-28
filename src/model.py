@@ -1,6 +1,7 @@
 from pydantic import (
     BaseModel,
     Field,
+    ConfigDict,
     model_validator,
     ValidationError
 )
@@ -28,7 +29,7 @@ class FunctionCallingTest(BaseModel):
     """
     For the validation of the prompt.
     """
-
+    model_config = ConfigDict(extra='forbid')
     prompt: str = Field()
 
 
@@ -37,7 +38,7 @@ class FunctionResult(BaseModel):
     Validate the result format if it contains the required
     keys with the excepted type
     """
-
+    model_config = ConfigDict(extra='forbid')
     prompt: str = Field()
     name: str = Field()
     parameters: dict[str, Any] = Field()
@@ -48,6 +49,7 @@ class FunctionDefinition(BaseModel):
     Validate the function definition type 
     with its exact keys and type each
     """
+    model_config = ConfigDict(extra='forbid')
     name: str = Field()
     description: str = Field()
     parameters: dict[str, ParamsType] = Field()

@@ -57,8 +57,9 @@ class GenerationParams:
 
     def gen_integer_value(self) -> None | str:
         integer = FsmInteger()
+        i = 0
 
-        while not integer.is_stopped():
+        while not integer.is_stopped() and i < 20:
             sorted_logits = self._get_sorted_logits()
 
             token_id = None
@@ -78,6 +79,7 @@ class GenerationParams:
                 return None
 
             self.prompt += word
+            i += 1
 
         if not integer.is_stopped():
             return None
@@ -86,8 +88,9 @@ class GenerationParams:
 
     def gen_number_value(self) -> None | str:
         number = FsmNumber()
+        i = 0
 
-        while not number.is_stopped():
+        while not number.is_stopped() and i < 20:
             sorted_logits = self._get_sorted_logits()
 
             token_id = None
@@ -102,11 +105,12 @@ class GenerationParams:
                 break
 
             word = self._model.decode(token_id)
-            print(word)
+
             if not number.check_and_load(word):
                 return None
 
             self.prompt += word
+            i += 1
 
         if not number.is_stopped():
             return None

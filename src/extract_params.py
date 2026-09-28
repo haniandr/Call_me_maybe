@@ -1,36 +1,53 @@
 import sys
 from typing import Any
 from .gen_func_name import GenerationFuncName
-from llm_sdk import Small_LLM_Model
+from llm_sdk import Small_LLM_Model  # type: ignore
 from .generator_fsm import GenerationParams
 
 
 class ConstraintParams:
+    """Build prompts and extract the typed parameters of a function."""
+
     def __init__(
         self,
         model: Small_LLM_Model
     ) -> None:
         self.prompt: str = ""
         self.model = model
-        self._param = None
+        self._param: GenerationParams | None = None
         self._func = GenerationFuncName(model)
 
     def get_param_func(self) -> list[dict[str, Any]]:
         """
-        Get a dictionary of the function name as a key
-        and its available parameters as values
+        Get the available function with their parameters
+
+        Return:
+        A list of dictionary with function name and parameters
+        for each element inside.
         """
         func_list = self._func.get_func_list()
+
         needed_list = []
-        for func in func_list:
+        if isinstance(func_list, list):
+            for func in func_list:
+                needed_list.append({
+                    "name": func["name"],
+                    "parameters": func["parameters"]
+                })
+        else:
             needed_list.append({
-                "name": func["name"],
-                "parameters": func["parameters"]
+                "name": func_list["name"],
+                "parameters": func_list["parameters"]
             })
 
         return needed_list
 
-    def transform_to_real_type(self, param_type: str, word: str) -> Any:
+    def transform_to_real_type(
+            self, 
+            param_type: str, 
+            word: str
+    ) -> Any:
+        """Convert a word to the type matching the `param_type`."""
         if param_type in ("number", "float"):
             return float(word)
 
@@ -48,12 +65,14 @@ class ConstraintParams:
             request: str
     ) -> dict[str, Any]:
         """
-        Combine all of the process to get the param's value
-        following the appropriate type according
+        Combine all of the process to get the param's value.
+
+        It follows the appropriate type according
         to the function name.
 
         Args:
             name_func: name of the function obtained by the LLM
+            request: prompt given from the parsing_file
         """
         try:
             func_list = self.get_param_func()
@@ -92,10 +111,19 @@ class ConstraintParams:
     def create_prompt(
         self,
         query: str,
-        func_param: dict[str, str],
+        func_param: str,
         param_key: str,
         types: str
     ) -> str:
+        """
+        Create prompt base used to extract the parameters.
+
+        Arguments:
+        query: the query given by the user
+        func_param: name of the function for the query
+        param_key: the key of the parameter to generate
+        types: type of the parameter to fill
+        """
         return f"""Extract the value.
 
 query: {query}
@@ -105,29 +133,3 @@ Functions:
 
 parameters: {types}
 {param_key}: \""""
-
-#
-# def main():
-#     model = Small_LLM_Model()
-#     param = ConstraintParams(model)
-#     func = GenerationFuncName(model)
-#
-#     # prompt = "What is the sum of 5 and 3?"
-#     # name = func.get_name_value(prompt)
-#     # print(param.combine_param(name, prompt))
-#     prompt = Parsing().parsing_arguments()[2]
-#     # print(type(prompt))
-#     if isinstance(prompt, list):
-#          for p in prompt:
-#             request = p.prompt
-#             name = func.get_name_value(request)
-#             print(param.combine_param(name, request))
-#
-#     else:
-#         p = prompt.prompt
-#         name = func.get_name_value(p)
-#         print(param.combine_param(name,p))
-#
-#
-# if __name__ == "__main__":
-#     main()

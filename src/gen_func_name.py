@@ -1,24 +1,28 @@
+import sys
 from typing import Any
 from .parsing_file import Parsing
-from llm_sdk import Small_LLM_Model
-
-# func_name = {
-#     "fn_add_numbers": "Add two numbers together and return their sum",
-#     "fn_greet": "Generate a greeting message for a person by name",
-#     "fn_reverse_string": "Reverse a string and return the reversed result",
-#     "fn_get_square_root": "Calculate square root of the number",
-#     "fn_substitute_string_with_regex": "Replace all" 
-#         "occurrences matching a regex pattern in a string"
-# }
+from llm_sdk import Small_LLM_Model  # type: ignore
 
 
 class GenerationFuncName:
+    """Choose a function name with the LLM, token by token."""
+
     def __init__(self, model: Small_LLM_Model) -> None:
+        """Initialize the generator with the given LLM model."""
         self._model = model
         self.prompt = ""
         self._parsed = Parsing()
 
-    def get_func_list(self) -> dict[str, Any] | list[dict[str, Any]]:
+    def get_func_list(
+            self
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """
+        Get the available functions with their details.
+
+        Return:
+        A list of dictionary or a dictionary
+        of the functions existing in the funcyions_definition file
+        """
         func_def_list = []
 
         function_list = self._parsed.parsing_arguments()[1]
@@ -36,11 +40,20 @@ class GenerationFuncName:
         return func_def_list
 
     def get_func_name(self) -> dict[str, str]:
+        """
+        Get the available function names.
+
+        Return only a content with the function name and the description
+        """
         func_list = self.get_func_list()
         func_name = {}
 
-        for element in func_list:
-            func_name[element["name"]] = element["description"]
+        if isinstance(func_list, list):
+            for element in func_list:
+                func_name[element["name"]] = element["description"]
+
+        elif isinstance(func_list, dict):
+            func_name[func_list["name"]] = func_list["description"]
 
         return func_name
 
@@ -49,6 +62,13 @@ class GenerationFuncName:
         query: str,
         functions: dict[str, str]
     ) -> str:
+        """
+        Create prompt to generate the function name
+
+        Arguments:
+        query: the user's prompt
+        functions: all the available function with their description each
+        """
         new = "".join(f" - {name}: {description}\n" for name, description in functions.items())
         return f"""Give the appropriate function name \
 according to the user's query.
@@ -59,52 +79,62 @@ Functions:
 {new}
 
 name: """
-    def get_name_value(self, request) -> dict[str, Any]:
+
+    def get_name_value(self, request: str) -> dict[str, Any]:
+        """
+        Generate the name of the function matching the request.
+
+        Arguments:
+        request: prompt
+
+        Return:
+        A dict with the key as name and the name gotten as value
+        """
         i = 0
         result = []
 
-        func_name = self.get_func_name()
+        try:
+            func_name = self.get_func_name()
 
-        self.prompt = self.create_prompt(
-            query=request,
-            functions=func_name
-        )
-
-        function_token = [
-            self._model.encode(name).tolist()[0]
-            for name in func_name
-        ]
-
-        while True:
-            input_ids = self._model.encode(self.prompt)
-            logits = self._model.get_logits_from_input_ids(
-                input_ids.tolist()[0]
+            self.prompt = self.create_prompt(
+                query=request,
+                functions=func_name
             )
 
-            candidates = [
-                name[i]
-                for name in function_token
-                if i < len(name) and name[:i] == result
+            function_token = [
+                self._model.encode(name).tolist()[0]
+                for name in func_name
             ]
 
-            if not candidates:
-                break
+            while True:
+                input_ids = self._model.encode(self.prompt)
+                logits = self._model.get_logits_from_input_ids(
+                    input_ids.tolist()[0]
+                )
 
-            score = float('-inf')
-            token = 0
+                candidates = [
+                    name[i]
+                    for name in function_token
+                    if i < len(name) and name[:i] == result
+                ]
 
-            for id in candidates:
-                if logits[id] > score:
-                    token = id
-                    score = logits[id]
+                if not candidates:
+                    break
 
-            result.append(token)
-            word = self._model.decode(token)
-            self.prompt += word
-            i += 1
+                score = float('-inf')
+                token = 0
 
-            # for function in function_token:
-            #     if function == result:
-            #         break
+                for id in candidates:
+                    if logits[id] > score:
+                        token = id
+                        score = logits[id]
 
-        return self._model.decode(result).strip()
+                result.append(token)
+                word = self._model.decode(token)
+                self.prompt += word
+                i += 1
+
+            return self._model.decode(result).strip()
+
+        except KeyboardInterrupt:
+            sys.exit("The name can't be generated.")

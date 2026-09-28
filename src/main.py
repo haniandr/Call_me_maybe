@@ -10,14 +10,13 @@ from .extract_params import ConstraintParams
 from .gen_func_name import GenerationFuncName
 
 
-model = Small_LLM_Model()
-
 
 class Test:
     def __init__(self) -> None:
         self._parsed = Parsing()
-        self._func = GenerationFuncName(model)
-        self._param = ConstraintParams(model)
+        self.model = Small_LLM_Model()
+        self._func = GenerationFuncName(self.model)
+        self._param = ConstraintParams(self.model)
 
     def check_output(
         self,
@@ -77,12 +76,17 @@ class Test:
         The main of this projects where the projects
         do all of tests and write the output in the output_file
         """
+        arg_model = self._parsed.parsing_arguments()[3]
+        if arg_model != "Qwen/Qwen3-0.6B":
+            self.model = Small_LLM_Model(arg_model)
+
         try:
             prompts = self._parsed.parsing_arguments()[2]
 
             if isinstance(prompts, list):
                 output = []
 
+                i = 0
                 for p in prompts:
                     request = p.prompt
 
@@ -96,13 +100,14 @@ class Test:
                         name,
                         request
                     )
-                    print(param)
 
                     output.append({
                         "prompt": request,
                         "name": name,
                         "parameters": param
                     })
+                    print(json.dumps(output[i], indent=4))
+                    i += 1
 
             else:
                 output = {}
@@ -110,16 +115,15 @@ class Test:
                 name = self._func.get_name_value(p)
 
                 param = self._param.combine_param(name, p)
-                print(param)
 
                 output = {
                     "prompt": p,
                     "name": name,
                     "parameters": param
                 }
+                print(json.dumps(output, indent=4))
 
             if output:
                 self.write_to_output(output)
-            print(output)
         except KeyboardInterrupt:
             sys.exit("Don't interrupt the process.")

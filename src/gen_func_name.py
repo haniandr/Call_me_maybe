@@ -1,3 +1,5 @@
+"""Generate the function name matching the user's request."""
+
 import sys
 from typing import Any
 from .parsing_file import Parsing
@@ -16,8 +18,7 @@ class GenerationFuncName:
     def get_func_list(
             self
     ) -> dict[str, Any] | list[dict[str, Any]]:
-        """
-        Get the available functions with their details.
+        """Get the available functions with their details.
 
         Return:
         A list of dictionary or a dictionary
@@ -40,8 +41,7 @@ class GenerationFuncName:
         return func_def_list
 
     def get_func_name(self) -> dict[str, str]:
-        """
-        Get the available function names.
+        """Get the available function names.
 
         Return only a content with the function name and the description
         """
@@ -62,14 +62,16 @@ class GenerationFuncName:
         query: str,
         functions: dict[str, str]
     ) -> str:
-        """
-        Create prompt to generate the function name
+        """Create prompt to generate the function name.
 
         Arguments:
         query: the user's prompt
         functions: all the available function with their description each
         """
-        new = "".join(f" - {name}: {description}\n" for name, description in functions.items())
+        new = "".join(
+            f" - {name}: {description}\n"
+            for name, description in functions.items()
+        )
         return f"""Give the appropriate function name \
 according to the user's query.
 
@@ -80,9 +82,8 @@ Functions:
 
 name: """
 
-    def get_name_value(self, request: str) -> dict[str, Any]:
-        """
-        Generate the name of the function matching the request.
+    def get_name_value(self, request: str) -> str:
+        """Generate the name of the function matching the request.
 
         Arguments:
         request: prompt

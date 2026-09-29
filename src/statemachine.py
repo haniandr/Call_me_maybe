@@ -1,9 +1,12 @@
-import math
+"""Finite State Machine used to validate the result generated."""
+
 from enum import Enum, auto
 from typing import Any
 
 
 class State(str, Enum):
+    """States shared by all the fsm."""
+
     START = auto()
     STRING = auto()
     SIGN = auto()
@@ -16,7 +19,13 @@ class State(str, Enum):
 
 
 class FsmString:
+    """Finite State Machine that parses a string.
+
+    Check if it agrees with states.
+    """
+
     def __init__(self) -> None:
+        """Initialize the machine with the value and state."""
         self.value = ""
         self.state: State | None = State.START
 
@@ -25,6 +34,12 @@ class FsmString:
         state: State | None,
         char: Any
     ) -> State | None:
+        """Return the next state that validate that reaches the fsm.
+
+        Arguments:
+        state: the actual state
+        char: the character to check where in the fsm.
+        """
         if state == State.START:
             return State.STRING
 
@@ -45,10 +60,7 @@ class FsmString:
         return None
 
     def verify_content(self, content: str) -> bool:
-        """
-        Verify if the content is accepted by the fsm
-        without modifying the actual state.
-        """
+        """Verify if the content is accepted with the fsm."""
         state: State | None = self.state
 
         for char in content:
@@ -59,6 +71,7 @@ class FsmString:
         return True
 
     def check_and_load(self, content: str) -> bool:
+        """Check the content against the fsm and load it."""
         for char in content:
             next_state: State | None = self.take_next_state(
                 self.state,
@@ -88,14 +101,15 @@ class FsmString:
         return True
 
     def is_stopped(self) -> bool:
-        """
-        Verify if the state is in the case finished or not.
-        """
+        """Verify if the state is in the case finished or not."""
         return self.state == State.END
 
 
 class FsmNumber:
+    """Finite State Machine that parses a decimal value."""
+
     def __init__(self) -> None:
+        """Initialize the State Machine with delimiters specified."""
         self.value = ""
         self.state = State.START
         self.delimiters = {'"', "\"", "\n"}
@@ -105,6 +119,12 @@ class FsmNumber:
         state: State | None,
         char: Any
     ) -> None | State:
+        """Return the state reached from a `char`.
+
+        Arguments:
+        state: the actual state
+        char: the character to check where in the fsm.
+        """
         if state == State.START:
             if char in "-+":
                 return State.SIGN
@@ -150,10 +170,7 @@ class FsmNumber:
         return None
 
     def verify_content(self, content: str) -> bool:
-        """
-        Verify the state if it's valid for every
-        character in the gotten string.
-        """
+        """Verify the state for each character."""
         state: State | None = self.state
 
         for char in content:
@@ -164,10 +181,7 @@ class FsmNumber:
         return True
 
     def check_and_load(self, content: str) -> bool:
-        """
-        Check the content gotten if
-        it follows the fsm and load it in the result
-        """
+        """Check the content against the fsm and load it."""
         for char in content:
             next_state = self.take_next_state(
                 self.state,
@@ -190,6 +204,7 @@ class FsmNumber:
         return True
 
     def is_stopped(self) -> bool:
+        """Verify if it's the state is in case to be finished."""
         return self.state in (
             State.DECIMAL,
             State.END,
@@ -197,7 +212,10 @@ class FsmNumber:
 
 
 class FsmInteger:
+    """Finite State Machine that parses an integer value."""
+
     def __init__(self) -> None:
+        """Initialize the machine with delimiters, value, state."""
         self.value = ""
         self.state = State.START
         self.delimiters = {'"', "\n", ","}
@@ -207,6 +225,12 @@ class FsmInteger:
         state: State | None,
         char: Any
     ) -> State | None:
+        """Return the state reached from a char.
+
+        Arguments:
+        state: the actual state
+        char: the character to check where in the fsm.
+        """
         if state == State.START:
             if char in "-+":
                 return State.SIGN
@@ -237,10 +261,7 @@ class FsmInteger:
         return None
 
     def verify_content(self, content: str) -> bool:
-        """
-        Check every character in the gotten string
-        if it follows the fsm state
-        """
+        """Check each character in the string with the actual state."""
         state: State | None = self.state
 
         for char in content:
@@ -252,10 +273,7 @@ class FsmInteger:
         return True
 
     def check_and_load(self, content: str) -> bool:
-        """
-        Check the content gotten if
-        it follows the fsm and load it in the result
-        """
+        """Check the content against the fsm and load it."""
         for char in content:
             next_state = self.take_next_state(
                 self.state,
@@ -276,4 +294,5 @@ class FsmInteger:
         return True
 
     def is_stopped(self) -> bool:
+        """Check is the actual state is at the END."""
         return self.state == State.END

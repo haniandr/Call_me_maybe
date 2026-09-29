@@ -1,3 +1,5 @@
+"""Extract the parameter values of a function from a natural langage."""
+
 import sys
 from typing import Any
 from .gen_func_name import GenerationFuncName
@@ -12,14 +14,14 @@ class ConstraintParams:
         self,
         model: Small_LLM_Model
     ) -> None:
+        """Initialize the extractor with the given LLM model."""
         self.prompt: str = ""
         self.model = model
         self._param: GenerationParams | None = None
         self._func = GenerationFuncName(model)
 
     def get_param_func(self) -> list[dict[str, Any]]:
-        """
-        Get the available function with their parameters
+        """Get the available function with their parameters.
 
         Return:
         A list of dictionary with function name and parameters
@@ -43,8 +45,8 @@ class ConstraintParams:
         return needed_list
 
     def transform_to_real_type(
-            self, 
-            param_type: str, 
+            self,
+            param_type: str,
             word: str
     ) -> Any:
         """Convert a word to the type matching the `param_type`."""
@@ -64,8 +66,7 @@ class ConstraintParams:
             name_func: str,
             request: str
     ) -> dict[str, Any]:
-        """
-        Combine all of the process to get the param's value.
+        """Combine all of the process to get the param's value.
 
         It follows the appropriate type according
         to the function name.
@@ -92,7 +93,7 @@ class ConstraintParams:
                             query=request,
                             func_param=name_func,
                             param_key=param_key,
-                            types = param_type
+                            types=param_type
                         )
 
                         self._param = GenerationParams(self.prompt, self.model)
@@ -115,8 +116,7 @@ class ConstraintParams:
         param_key: str,
         types: str
     ) -> str:
-        """
-        Create prompt base used to extract the parameters.
+        """Create prompt base used to extract the parameters.
 
         Arguments:
         query: the query given by the user

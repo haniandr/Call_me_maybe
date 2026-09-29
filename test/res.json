@@ -1,13 +1,5 @@
 [
     {
-        "prompt": "What is the sum of 2 and 3?",
-        "name": "fn_add_numbers",
-        "parameters": {
-            "a": 2.0,
-            "b": 3.0
-        }
-    },
-    {
         "prompt": "What is the sum of 265 and 345?",
         "name": "fn_add_numbers",
         "parameters": {
@@ -76,10 +68,10 @@
         }
     },
     {
-        "prompt": "Substitute the word 'cat' with 'dog' in 'The cat sat on the mat with another cat'",
+        "prompt": "Substitute the word 'cat' with 'dog' in 'The cat is here'",
         "name": "fn_substitute_string_with_regex",
         "parameters": {
-            "source_string": "The cat sat on the mat with another cat",
+            "source_string": "The cat is here",
             "regex": "cat",
             "replacement": "dog"
         }

@@ -5,8 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "flake8-docstrings>=1.7.0",
     "llm-sdk",
     "pydantic>=2.13.5",
+    "pyfiglet>=1.0.4",
 ]
 
 [tool.uv.workspace]

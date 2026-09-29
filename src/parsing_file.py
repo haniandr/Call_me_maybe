@@ -1,30 +1,35 @@
+"""Parsing of the file and get from the command-line arguments."""
+
 import argparse
 import sys
 import json
 from typing import Any
-from pydantic import ValidationError, BaseModel
+from pydantic import BaseModel
 from .model import FunctionDefinition, FunctionCallingTest
 from pathlib import Path
 
+ParsedContent = list[dict[str, Any]] | dict[str, Any] | None
+PromptType = list[FunctionCallingTest] | FunctionCallingTest
+
 
 class Parsing:
+    """Parse functions, prompts files and the command-line."""
+
     def __init__(self) -> None:
-        ...
+        """Initialize the class."""
 
     def parse_function(
             self,
-            content: list[dict[str, Any]]
-                | dict[str, Any]
-                | None
+            content: ParsedContent
     ) -> list[FunctionDefinition] | None:
-        """
-        Function that validate the file content
-        in the functions_definition file with all the
-        name, parameters type, description and the returns type
+        """Validate the function file content.
+
+        It is in the functions_definition file with all the
+        name, parameters type, description and the returns type.
 
         Return:
             A list of pydantic validated or not with
-            FunctionDefinition
+        FunctionDefinition.
         """
         required_keys = {
             "name",
@@ -33,6 +38,7 @@ class Parsing:
             "returns"
         }
         function_list = []
+
         if isinstance(content, list):
             for function in content:
                 if not required_keys.issubset(function.keys()):
@@ -48,7 +54,7 @@ class Parsing:
 
         elif isinstance(content, dict):
             if not required_keys.issubset(content.key()):
-                    sys.exit("Missing key")
+                sys.exit("Missing key")
 
             function_list.append(FunctionDefinition(
                     name=content["name"],
@@ -60,23 +66,17 @@ class Parsing:
 
     def parse_test(
             self,
-            content: list[dict[str, Any]]
-                | dict[str, Any]
-                | None
-    ) -> list[FunctionCallingTest] | FunctionCallingTest | None:
-        """
-        Parse the file with the user's question
-        and return an object validated by pydantic
-        with FunctionCallingTest
+            content: ParsedContent
+    ) -> PromptType | None:
+        """Parse the file with the user's question.
+
+        Return an object validated by pydantic
+        with FunctionCallingTest.
 
         Return:
-            An list of object validated by pydantic
+            An list of object validated by pydantic.
         """
-
         required_keys = {"prompt"}
-
-        if content is None:
-            sys.exit("Missing prompt. No content in the file")
 
         if isinstance(content, list):
             input_test = []
@@ -99,23 +99,23 @@ class Parsing:
             self,
             name: str,
             model: BaseModel
-    ) -> None | list[BaseModel]:
-        """
-        Open a file and read it with a json.load which
-        read and decode  a JSON file and return a python object
+    ) -> None | PromptType | list[FunctionDefinition]:
+        """Open a file and read it with a json.load.
+
+        It reads and decodes a JSON file and return a python object
         LIST or DICT
 
         Return:
-            None if the file is not the excepted
-            The content validated by pydantic in a list
+            None if the file is not the excepted.
+            The content validated by pydantic in a list.
         """
         try:
             with open(name, "r") as file:
                 data = json.load(file)
             if len(data) == 0:
-                raise ValidationError(
+                sys.exit(
                     f"Your file '{name}'"
-                    "has no content. Please check!!"
+                    " has no content. Please check!!"
                 )
 
             if not (isinstance(data, (list, dict))):
@@ -132,29 +132,27 @@ class Parsing:
         except json.JSONDecodeError:
             sys.exit(f"You have an invalid format JSON in the file '{name}'")
 
-        except ValidationError as e:
-            sys.exit(f"Error found: {e}")
-
         except FileNotFoundError:
             sys.exit("No such file or directory"
                      f" in the current project: {name}")
+
         except PermissionError:
             sys.exit(f"No permission to open this file {name}.")
 
     def parsing_arguments(self) -> (
-            tuple[Path, list[FunctionDefinition],
-                  (
-                    list[FunctionCallingTest] |
-                    FunctionCallingTest
-                    )]):
-        """
-        Parse the arguments on the command line or if not
-        it exists by default
+            tuple[
+                    Path,
+                    list[FunctionDefinition],
+                    PromptType, str
+            ]):
+        """Parse the arguments on the command line.
+
+        Check if it exists by default or not.
 
         Return:
-             a tuple with the path of the output 
+             a tuple with the path of the output
         with the list of functions validated on pydantic
-        and the list or dictionnary of the input file with the tests 
+        and the list or dictionnary of the input file with the tests.
         """
         parser = argparse.ArgumentParser()
 
@@ -199,4 +197,3 @@ function_calling_results.json"))
         )
 
         return args.output, func_def, input_test, args.model
-

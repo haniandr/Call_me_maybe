@@ -1,3 +1,5 @@
+"""Make the packages executable via command line."""
+
 import sys
 from .main import Test
 
@@ -12,8 +14,7 @@ if __name__ == "__main__":
   ░██████   ░█████░██ ░██ ░██    ░██   ░██   ░██  ░███████     ░██   ░██   ░██  ░█████░██  ░█████░██ ░██░█████   ░███████  
                                                                                                  ░██                       
                                                                                            ░███████                        
-    """)
-    print()
+    """) # noqa W291, W293
     try:
         Test().main()
     except KeyboardInterrupt:

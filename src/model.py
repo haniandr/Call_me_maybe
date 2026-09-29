@@ -1,15 +1,17 @@
+"""Pydantic models used to validate functions, parameters, output."""
+
 from pydantic import (
     BaseModel,
     Field,
     ConfigDict,
-    model_validator,
-    ValidationError
 )
 from typing import Any
 from enum import Enum
 
 
 class TypeSpecify(Enum):
+    """Type a parameter and a value return can have."""
+
     NUMBER = "number"
     STRING = "string"
     BOOLEAN = "boolean"
@@ -18,26 +20,31 @@ class TypeSpecify(Enum):
 
 
 class ParamsType(BaseModel):
+    """Validate a parameter type."""
+
     type: TypeSpecify
 
 
 class ReturnType(BaseModel):
+    """Validate a return type."""
+
     type: TypeSpecify
 
 
 class FunctionCallingTest(BaseModel):
-    """
-    For the validation of the prompt.
-    """
+    """For the validation of the prompt."""
+
     model_config = ConfigDict(extra='forbid')
     prompt: str = Field()
 
 
 class FunctionResult(BaseModel):
+    """Validate the result format.
+
+    Check if it contains the required
+    keys with the excepted type.
     """
-    Validate the result format if it contains the required
-    keys with the excepted type
-    """
+
     model_config = ConfigDict(extra='forbid')
     prompt: str = Field()
     name: str = Field()
@@ -45,14 +52,13 @@ class FunctionResult(BaseModel):
 
 
 class FunctionDefinition(BaseModel):
+    """Validate the function definition type.
+
+    Check if it the exact keys and types for each.
     """
-    Validate the function definition type 
-    with its exact keys and type each
-    """
+
     model_config = ConfigDict(extra='forbid')
     name: str = Field()
     description: str = Field()
     parameters: dict[str, ParamsType] = Field()
     returns: ReturnType
-
-

@@ -1,23 +1,29 @@
+"""Generate the type value wanted of the function parameter."""
+
 from typing import Any
 from .statemachine import (
         FsmString,
         FsmInteger,
         FsmNumber
 )
-from llm_sdk import Small_LLM_Model
+from llm_sdk import Small_LLM_Model  # type: ignore
 
 
 class GenerationParams:
+    """Generate a parameter value with constrained to restrict the result."""
+
     def __init__(
         self,
         prompt: str,
         model: Small_LLM_Model
     ) -> None:
+        """Initialize the generator with the prompt and the LLM."""
         self._model = model
         self.prompt: str = prompt
         self.delimiters = {'"', "\n", ","}
 
     def _get_sorted_logits(self) -> list[int]:
+        """Get the top 100 highest tokens in descending order."""
         input_ids = self._model.encode(self.prompt)
 
         logits = self._model.get_logits_from_input_ids(
@@ -28,9 +34,10 @@ class GenerationParams:
                 range(len(logits)),
                 key=lambda x: logits[x],
                 reverse=True
-            )[:100])
+                )[:100])
 
     def gen_string_value(self) -> None | str:
+        """Generate a string value token by token with the fsm."""
         string = FsmString()
         while not string.is_stopped():
             sorted_logits = self._get_sorted_logits()
@@ -41,7 +48,6 @@ class GenerationParams:
                 if string.verify_content(chosen):
                     token_id = token
                     break
-
 
             if token_id is None:
                 break
@@ -56,6 +62,7 @@ class GenerationParams:
         return string.value
 
     def gen_integer_value(self) -> None | str:
+        """Generate an integer value token by token with its fsm."""
         integer = FsmInteger()
         i = 0
 
@@ -87,6 +94,7 @@ class GenerationParams:
         return integer.value
 
     def gen_number_value(self) -> None | str:
+        """Generate a decimal number token by token with its fsm."""
         number = FsmNumber()
         i = 0
 
@@ -118,9 +126,10 @@ class GenerationParams:
         return number.value
 
     def gen_boolean_value(self) -> None | str:
+        """Generate a boolean value with constrained True/False."""
         waited_value = ["true", "True", "false", "False"]
 
-        value = ""
+        value: str = ""
 
         sorted_logits = self._get_sorted_logits()
 
@@ -150,8 +159,8 @@ class GenerationParams:
 
         return None
 
-
-    def choose_function(self, param_type: str) -> None | str:
+    def choose_function(self, param_type: str) -> Any:
+        """Choose and cast the value into the parameter type."""
         if param_type == "number" or param_type == "float":
             return self.gen_number_value()
 

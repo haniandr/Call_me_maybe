@@ -2,8 +2,10 @@
 
 import sys
 from typing import Any
-from .parsing_file import Parsing
+
 from llm_sdk import Small_LLM_Model  # type: ignore
+
+from .parsing_file import Parsing
 
 
 class GenerationFuncName:
@@ -82,7 +84,7 @@ Functions:
 
 name: """
 
-    def get_name_value(self, request: str) -> str:
+    def get_name_value(self, request: Any) -> Any:
         """Generate the name of the function matching the request.
 
         Arguments:
@@ -92,7 +94,7 @@ name: """
         A dict with the key as name and the name gotten as value
         """
         i = 0
-        result = []
+        result: list[int] = []
 
         try:
             func_name = self.get_func_name()
@@ -138,4 +140,4 @@ name: """
             return self._model.decode(result).strip()
 
         except KeyboardInterrupt:
-            sys.exit("The name can't be generated.")
+            sys.exit("\nThe name can't be generated.")

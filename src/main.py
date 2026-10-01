@@ -1,16 +1,19 @@
 """Test all the functions from parsing to parameters."""
 
 import json
-import sys
 import os
+import sys
 from argparse import ArgumentTypeError
-from llm_sdk import Small_LLM_Model
 from typing import Any
+
 from pydantic import ValidationError
-from .parsing_file import Parsing
-from .model import FunctionResult
+
+from llm_sdk import Small_LLM_Model  # type: ignore
+
 from .extract_params import ConstraintParams
 from .gen_func_name import GenerationFuncName
+from .model import FunctionResult
+from .parsing_file import Parsing
 
 
 class Test:
@@ -30,16 +33,12 @@ class Test:
         """Validate the output gotten if it follows the type wanted."""
         try:
             if isinstance(output, dict):
-                return FunctionResult(
-                    prompt=output["prompt"],
-                    name=output["name"],
-                    parameters=output["parameters"]
+                return FunctionResult.model_validate(
+                    output
                 )
             return [
-                FunctionResult(
-                    prompt=item["prompt"],
-                    name=item["name"],
-                    parameters=item["parameters"]
+                FunctionResult.model_validate(
+                    item
                 )
                 for item in output
             ]
@@ -47,7 +46,10 @@ class Test:
             msg = e.errors()[0]["msg"]
             sys.exit(f"Error gotten: {msg}")
 
-    def write_to_output(self, output: dict[str, Any]) -> None:
+    def write_to_output(
+            self,
+            output: dict[str, Any] | list[dict[str, Any]]
+    ) -> None:
         """Write the output validated in the file.
 
         Arguments:
@@ -60,14 +62,13 @@ class Test:
             if result is None:
                 sys.exit("Can't write in the output file")
 
-            if isinstance(result, FunctionResult):
-                output = result.model_dump()
-
-            else:
+            if isinstance(result, list):
                 output = [
                     res.model_dump()
                     for res in result
                 ]
+            else:
+                output = result.model_dump()
 
             os.makedirs(os.path.dirname(name), exist_ok=True)
             with open(name, "w") as file:
@@ -94,10 +95,13 @@ class Test:
 
             prompts = self._parsed.parsing_arguments()[2]
 
+            output: Any
+
             if isinstance(prompts, list):
-                output = []
+                results: list[dict[str, Any]] = []
 
                 i = 0
+                print("⏳ The output generation:")
                 for p in prompts:
                     request = p.prompt
 
@@ -112,29 +116,33 @@ class Test:
                         request
                     )
 
-                    output.append({
+                    results.append({
                         "prompt": request,
                         "name": name,
                         "parameters": param
                     })
-                    print(json.dumps(output[i], indent=4))
+                    print(json.dumps(results[i], indent=4))
                     i += 1
+                output = results
 
             else:
-                output = {}
-                p = prompts.prompt
-                name = self._func.get_name_value(p)
+                result: dict[str, Any] = {}
+                prompt_ = prompts.prompt
+
+                name = self._func.get_name_value(prompt_)
                 if name is None:
                     sys.exit("The function has no name, "
                              "the generation stops here...")
 
-                param = self._param.combine_param(name, p)
+                param = self._param.combine_param(name, prompt_)
 
-                output = {
-                    "prompt": p,
+                result = {
+                    "prompt": prompt_,
                     "name": name,
                     "parameters": param
                 }
+                output = result
+                print("⏳ The output generation:")
                 print(json.dumps(output, indent=4))
 
             if output:

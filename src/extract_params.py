@@ -2,8 +2,10 @@
 
 import sys
 from typing import Any
-from .gen_func_name import GenerationFuncName
+
 from llm_sdk import Small_LLM_Model  # type: ignore
+
+from .gen_func_name import GenerationFuncName
 from .generator_fsm import GenerationParams
 
 
@@ -64,7 +66,7 @@ class ConstraintParams:
     def combine_param(
             self,
             name_func: str,
-            request: str
+            request: Any
     ) -> dict[str, Any]:
         """Combine all of the process to get the param's value.
 
@@ -82,7 +84,7 @@ class ConstraintParams:
             for func in func_list:
                 all_params[func["name"]] = func["parameters"]
 
-            param_result = {}
+            param_result: dict[str, Any] = {}
             for func_name, param in all_params.items():
                 self.prompt = ""
                 if func_name != name_func:
@@ -99,15 +101,21 @@ class ConstraintParams:
                         self._param = GenerationParams(self.prompt, self.model)
 
                         res = self._param.choose_function(param_type)
+
+                        if res is None:
+                            param_result[param_key] = res
+                            self.prompt += "None" + '"\n'
+
                         if res:
                             res_typed = self.transform_to_real_type(
                                 param_type, res
                             )
                             param_result[param_key] = res_typed
                             self.prompt += res + '"\n'
+
             return param_result
         except KeyboardInterrupt:
-            sys.exit("Still generating the parameters :(!!")
+            sys.exit("\nStill generating the parameters :(!!")
 
     def create_prompt(
         self,

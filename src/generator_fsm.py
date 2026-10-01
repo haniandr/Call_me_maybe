@@ -1,12 +1,10 @@
 """Generate the type value wanted of the function parameter."""
 
 from typing import Any
-from .statemachine import (
-        FsmString,
-        FsmInteger,
-        FsmNumber
-)
+
 from llm_sdk import Small_LLM_Model  # type: ignore
+
+from .statemachine import FsmInteger, FsmNumber, FsmString
 
 
 class GenerationParams:

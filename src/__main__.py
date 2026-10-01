@@ -1,7 +1,6 @@
-"""Make the packages executable via command line."""
+"""Make the packages executable via command."""
 
 import sys
-from .main import Test
 
 if __name__ == "__main__":
     print(r"""
@@ -16,6 +15,10 @@ if __name__ == "__main__":
                                                                                            ░███████                        
     """) # noqa W291, W293
     try:
+
+        from .main import Test
+
         Test().main()
+
     except KeyboardInterrupt:
-        sys.exit("\nI'm still runnig the program")
+        sys.exit("\nThe program is still running.")

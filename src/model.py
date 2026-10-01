@@ -1,12 +1,9 @@
 """Pydantic models used to validate functions, parameters, output."""
 
-from pydantic import (
-    BaseModel,
-    Field,
-    ConfigDict,
-)
-from typing import Any
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class TypeSpecify(Enum):
@@ -22,12 +19,14 @@ class TypeSpecify(Enum):
 class ParamsType(BaseModel):
     """Validate a parameter type."""
 
+    model_config = ConfigDict(extra='forbid')
     type: TypeSpecify
 
 
 class ReturnType(BaseModel):
     """Validate a return type."""
 
+    model_config = ConfigDict(extra='forbid')
     type: TypeSpecify
 
 
@@ -62,3 +61,10 @@ class FunctionDefinition(BaseModel):
     description: str = Field()
     parameters: dict[str, ParamsType] = Field()
     returns: ReturnType
+
+    @model_validator(mode="after")
+    def validate_model(self) -> 'FunctionDefinition':
+        """Validate some of the variable of the function."""
+        if not self.description.strip():
+            raise ValueError("A function must have a description.")
+        return self
